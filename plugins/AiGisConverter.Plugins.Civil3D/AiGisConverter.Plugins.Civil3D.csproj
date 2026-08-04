@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Host-bound plugin. The Civil3D API only functions inside Civil3D's own process, so this
+    assembly is the bridge client; the code touching the vendor API is an add-in installed
+    into Civil3D itself (see addins/).
+  -->
+  <PropertyGroup>
+    <RootNamespace>AiGisConverter.Plugins.Civil3D</RootNamespace>
+    <AssemblyName>AiGisConverter.Plugins.Civil3D</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Contract assemblies are resolved from the host's load context, never from the plugin folder.
+      Private=false stops them being copied here: a second copy would be either dead weight or,
+      if the host's shared-assembly list were ever wrong, a second Type identity - after which
+      every cast across the plugin boundary fails with an error that reads like a type cannot be
+      converted to itself.
+    -->
+    <ProjectReference Include="..\..\src\AiGisConverter.Domain\AiGisConverter.Domain.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\AiGisConverter.Plugins.Abstractions\AiGisConverter.Plugins.Abstractions.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\AiGisConverter.Bridge.Client\AiGisConverter.Bridge.Client.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\AiGisConverter.Bridge.Protocol\AiGisConverter.Bridge.Protocol.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+</Project>

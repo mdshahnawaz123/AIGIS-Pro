@@ -1,0 +1,31 @@
+{
+  "id": "dubai-municipality",
+  "name": "Dubai Municipality",
+  "description": "Dubai Local Transverse Mercator delivery. Verify the CRS and field schema against the current DM submission specification before production use.",
+  "extends": "esri",
+  "outputCrs": "EPSG:3997",
+  "precisionScale": 1000,
+  "chordTolerance": 0.005,
+  "naming": {
+    "case": "Upper",
+    "separator": "_",
+    "asciiOnly": true,
+    "maximumFieldNameLength": 10,
+    "prefix": "DM_"
+  },
+  "geometry": {
+    "promoteToMulti": true,
+    "includeZ": true,
+    "exteriorRingOrientation": "Clockwise",
+    "closedLinesToPolygons": true,
+    "explodeCollections": true
+  },
+  "qa": {
+    "failAtOrAbove": "Error",
+    "checkSelfIntersection": true,
+    "checkDuplicateVertices": true,
+    "checkZeroArea": true,
+    "checkRingValidity": true,
+    "checkNullGeometry": true
+  }
+}

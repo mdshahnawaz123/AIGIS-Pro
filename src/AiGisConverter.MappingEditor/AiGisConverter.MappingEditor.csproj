@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\AiGisConverter.Domain\AiGisConverter.Domain.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Business\AiGisConverter.Business.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Application\AiGisConverter.Application.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Cad\AiGisConverter.Cad.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Gis\AiGisConverter.Gis.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Plugins.Abstractions\AiGisConverter.Plugins.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <!-- Serialises a selection to GeoJSON through NetTopologySuite's own converters rather than
+         hand-written JSON, so the editor's quick export and the pipeline's exporter agree. -->
+    <PackageReference Include="NetTopologySuite.IO.GeoJSON4STJ" />
+    <PackageReference Include="MahApps.Metro.IconPacks" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+</Project>

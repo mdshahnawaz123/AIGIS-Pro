@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AiGisConverter.Plugins.Ifc.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\plugins\AiGisConverter.Plugins.Ifc\AiGisConverter.Plugins.Ifc.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,17 @@
+{
+  "id": "aigis.reader.pdf",
+  "name": "PDF Vector Reader",
+  "version": "1.0.0",
+  "sdkVersion": "1.0",
+  "publisher": "AI GIS Converter",
+  "description": "Reads *.pdf into the converter's format-neutral source model.",
+  "entryAssembly": "AiGisConverter.Plugins.Pdf.dll",
+  "entryType": "AiGisConverter.Plugins.Pdf.PdfPlugin",
+  "isolation": "Isolated",
+  "capabilities": [
+    "DataSourceReader"
+  ],
+  "enabled": true,
+  "loadOrder": 100,
+  "sharedAssemblies": []
+}

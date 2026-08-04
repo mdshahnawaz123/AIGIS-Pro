@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Layer: AI.
+    Pluggable classifiers behind a single IAIProvider contract:
+      * rulebased - deterministic, offline, always available (default and fallback)
+      * onnx      - local model via ONNX Runtime
+      * ollama    - local LLM over HTTP
+      * openai    - hosted chat completions (also serves OpenAI-compatible gateways)
+    New providers are added by implementing IAIProvider and shipping one
+    IAIProviderBuilder extension method. No file in this project changes.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AiGisConverter.Ai</RootNamespace>
+    <!--
+      CA1812: wire-format DTOs are instantiated by System.Text.Json, not by our code.
+      CA1031: the logging decorator catches, logs and rethrows, which is the point of the decorator.
+    -->
+    <NoWarn>$(NoWarn);CA1812;CA1031</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AiGisConverter.Domain\AiGisConverter.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" />
+    <PackageReference Include="System.Text.Json" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
+  </ItemGroup>
+
+</Project>

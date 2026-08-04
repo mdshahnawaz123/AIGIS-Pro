@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AiGisConverter.Plugins.LandXml.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\plugins\AiGisConverter.Plugins.LandXml\AiGisConverter.Plugins.LandXml.csproj" />
+  </ItemGroup>
+
+</Project>

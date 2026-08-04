@@ -1,0 +1,21 @@
+{
+  "id": "esri",
+  "name": "ESRI Shapefile",
+  "description": "Shapefile constraints: clockwise exterior rings, 10-character field names, everything promoted to multi-part.",
+  "extends": "generic-geojson",
+  "exportFormat": "Shapefile",
+  "naming": {
+    "case": "Upper",
+    "separator": "_",
+    "asciiOnly": true,
+    "maximumFieldNameLength": 10,
+    "maximumLayerNameLength": 60
+  },
+  "geometry": {
+    "promoteToMulti": true,
+    "includeZ": true,
+    "exteriorRingOrientation": "Clockwise",
+    "explodeCollections": true
+  },
+  "qa": { "failAtOrAbove": "Critical", "checkRingValidity": true }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "aigis.reader.pointcloud",
+  "name": "Point Cloud Reader",
+  "version": "1.0.0",
+  "sdkVersion": "1.0",
+  "publisher": "AI GIS Converter",
+  "description": "Reads *.e57 *.pts *.ply *.rcp into the converter's format-neutral source model.",
+  "entryAssembly": "AiGisConverter.Plugins.PointCloud.dll",
+  "entryType": "AiGisConverter.Plugins.PointCloud.PointCloudPlugin",
+  "isolation": "Isolated",
+  "capabilities": [
+    "DataSourceReader"
+  ],
+  "enabled": true,
+  "loadOrder": 100,
+  "sharedAssemblies": []
+}

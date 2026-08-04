@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>AiGisConverter.Presentation.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AiGisConverter.Presentation\AiGisConverter.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\AiGisConverter.Plugins.Abstractions\AiGisConverter.Plugins.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\AiGisConverter.Plugins.Hosting\AiGisConverter.Plugins.Hosting.csproj" />
+    <ProjectReference Include="..\..\src\AiGisConverter.Domain\AiGisConverter.Domain.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <UseWPF>true</UseWPF>
+    <Platforms>x64</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- End-to-end: DXF/DWG on disk -> pipeline -> Shapefile/GeoJSON/GPKG/CSV/KML on disk. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AiGisConverter.IntegrationTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AiGisConverter.Application\AiGisConverter.Application.csproj" />
+    <ProjectReference Include="..\..\src\AiGisConverter.Business\AiGisConverter.Business.csproj" />
+    <ProjectReference Include="..\..\src\AiGisConverter.Cad\AiGisConverter.Cad.csproj" />
+    <ProjectReference Include="..\..\src\AiGisConverter.Gis\AiGisConverter.Gis.csproj" />
+    <ProjectReference Include="..\..\src\AiGisConverter.Ai\AiGisConverter.Ai.csproj" />
+    <ProjectReference Include="..\..\src\AiGisConverter.QaQc\AiGisConverter.QaQc.csproj" />
+    <ProjectReference Include="..\..\src\AiGisConverter.Data\AiGisConverter.Data.csproj" />
+    <ProjectReference Include="..\..\src\AiGisConverter.Infrastructure\AiGisConverter.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\AiGisConverter.Bridge.Client\AiGisConverter.Bridge.Client.csproj" />
+    <ProjectReference Include="..\..\src\AiGisConverter.Composition\AiGisConverter.Composition.csproj" />
+    <ProjectReference Include="..\..\src\AiGisConverter.Plugins.Hosting\AiGisConverter.Plugins.Hosting.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      IFC models are excluded deliberately. These tests cover DXF/DWG through the pipeline and
+      never open an IFC file, while a production IFC export runs to tens of megabytes - copying one
+      into this project's output on every build costs real time and disk for nothing.
+      AiGisConverter.Plugins.Ifc.Tests reads tests\TestData\Ifc from the source tree directly, so
+      excluding it here does not reduce IFC coverage.
+    -->
+    <None Include="..\TestData\**\*.*" Exclude="..\TestData\Ifc\**\*.ifc" LinkBase="TestData">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

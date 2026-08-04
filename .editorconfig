@@ -1,0 +1,61 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+[*.{xml,csproj,props,targets,config,xaml}]
+indent_size = 2
+
+[*.{json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+# --- Microsoft C# coding conventions ---
+csharp_using_directive_placement = outside_namespace:warning
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_prefer_braces = true:warning
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:silent
+csharp_style_prefer_primary_constructors = false:suggestion
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+dotnet_style_readonly_field = true:warning
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+
+# --- Naming ---
+dotnet_naming_rule.interfaces_start_with_i.severity = error
+dotnet_naming_rule.interfaces_start_with_i.symbols = interface_symbol
+dotnet_naming_rule.interfaces_start_with_i.style = i_prefix_style
+dotnet_naming_symbols.interface_symbol.applicable_kinds = interface
+dotnet_naming_style.i_prefix_style.required_prefix = I
+dotnet_naming_style.i_prefix_style.capitalization = pascal_case
+
+dotnet_naming_rule.private_fields_underscore.severity = warning
+dotnet_naming_rule.private_fields_underscore.symbols = private_field_symbol
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel_style
+dotnet_naming_symbols.private_field_symbol.applicable_kinds = field
+dotnet_naming_symbols.private_field_symbol.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel_style.required_prefix = _
+dotnet_naming_style.underscore_camel_style.capitalization = camel_case
+
+dotnet_naming_rule.types_pascal.severity = warning
+dotnet_naming_rule.types_pascal.symbols = type_symbol
+dotnet_naming_rule.types_pascal.style = pascal_style
+dotnet_naming_symbols.type_symbol.applicable_kinds = class,struct,enum,delegate,method,property,event
+dotnet_naming_style.pascal_style.capitalization = pascal_case
+
+# --- Analyzer severities that matter for this codebase ---
+dotnet_diagnostic.CS1591.severity = warning   # missing XML doc on public member
+dotnet_diagnostic.CA1063.severity = warning   # implement IDisposable correctly
+dotnet_diagnostic.CA2016.severity = warning   # forward CancellationToken
+dotnet_diagnostic.CA1849.severity = warning   # call async methods in async context
+dotnet_diagnostic.VSTHRD200.severity = none

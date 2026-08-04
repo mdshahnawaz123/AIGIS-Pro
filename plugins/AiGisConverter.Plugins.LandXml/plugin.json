@@ -1,0 +1,17 @@
+{
+  "id": "aigis.reader.landxml",
+  "name": "LandXML Reader",
+  "version": "1.0.0",
+  "sdkVersion": "1.0",
+  "publisher": "AI GIS Converter",
+  "description": "Reads *.xml and *.landxml survey and design data into the converter's format-neutral source model.",
+  "entryAssembly": "AiGisConverter.Plugins.LandXml.dll",
+  "entryType": "AiGisConverter.Plugins.LandXml.LandXmlPlugin",
+  "isolation": "Isolated",
+  "capabilities": [
+    "DataSourceReader"
+  ],
+  "enabled": true,
+  "loadOrder": 100,
+  "sharedAssemblies": []
+}

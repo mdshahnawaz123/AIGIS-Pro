@@ -1,0 +1,15 @@
+{
+  "id": "aigis.export.gis",
+  "name": "GIS Export",
+  "version": "1.0.0",
+  "sdkVersion": "1.0",
+  "publisher": "AI GIS Converter",
+  "description": "Writes converted documents to GIS formats. Ships a dependency-free GeoJSON writer.",
+  "entryAssembly": "AiGisConverter.Plugins.GisExport.dll",
+  "entryType": "AiGisConverter.Plugins.GisExport.GisExportPlugin",
+  "isolation": "Isolated",
+  "capabilities": [ "FeatureExporter" ],
+  "enabled": true,
+  "loadOrder": 50,
+  "sharedAssemblies": []
+}

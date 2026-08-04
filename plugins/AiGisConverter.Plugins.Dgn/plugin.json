@@ -1,0 +1,17 @@
+{
+  "id": "aigis.reader.dgn",
+  "name": "Bentley DGN Reader",
+  "version": "1.0.0",
+  "sdkVersion": "1.0",
+  "publisher": "AI GIS Converter",
+  "description": "Reads *.dgn into the converter's format-neutral source model.",
+  "entryAssembly": "AiGisConverter.Plugins.Dgn.dll",
+  "entryType": "AiGisConverter.Plugins.Dgn.DgnPlugin",
+  "isolation": "Isolated",
+  "capabilities": [
+    "DataSourceReader"
+  ],
+  "enabled": true,
+  "loadOrder": 100,
+  "sharedAssemblies": []
+}

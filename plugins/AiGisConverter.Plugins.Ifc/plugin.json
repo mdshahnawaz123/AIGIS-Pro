@@ -1,0 +1,17 @@
+{
+  "id": "aigis.reader.ifc",
+  "name": "IFC Reader",
+  "version": "1.0.0",
+  "sdkVersion": "1.0",
+  "publisher": "AI GIS Converter",
+  "description": "Reads *.ifc *.ifcxml *.ifczip into the converter's format-neutral source model.",
+  "entryAssembly": "AiGisConverter.Plugins.Ifc.dll",
+  "entryType": "AiGisConverter.Plugins.Ifc.IfcPlugin",
+  "isolation": "Isolated",
+  "capabilities": [
+    "DataSourceReader"
+  ],
+  "enabled": true,
+  "loadOrder": 100,
+  "sharedAssemblies": []
+}

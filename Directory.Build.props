@@ -1,0 +1,32 @@
+<Project>
+
+  <!--
+    Solution-wide MSBuild defaults for AI GIS Converter.
+    Applies to every project unless explicitly overridden.
+  -->
+  <PropertyGroup>
+    <LangVersion>12.0</LangVersion>
+    <!-- The solution builds x64 only (native GDAL/PROJ). Give every project that platform. -->
+    <Platforms Condition="'$(Platforms)' == ''">AnyCPU;x64</Platforms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CA1848;CA2007;IDE0161;CA1716;CA1720;CA1000;CA1873;CA1859;CA1822;CA2254;CA1826;CA1849;CA1305;CA1711</NoWarn>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <Company>AI GIS Converter</Company>
+    <Product>AI GIS Converter</Product>
+    <Version>1.0.0</Version>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Optimize>true</Optimize>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+</Project>

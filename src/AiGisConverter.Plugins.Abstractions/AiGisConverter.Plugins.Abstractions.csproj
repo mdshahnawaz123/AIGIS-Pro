@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The plugin SDK. This is the ONLY assembly a plugin author must reference, and it is the
+    assembly whose binary compatibility must be preserved across host releases.
+
+    It deliberately depends on almost nothing: Domain (for the port types a plugin implements)
+    and the Microsoft.Extensions abstractions. It must never reference a layer that carries an
+    implementation, or every plugin would inherit ONNX Runtime, GDAL and EF Core.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AiGisConverter.Plugins.Abstractions</RootNamespace>
+    <AssemblyName>AiGisConverter.Plugins.Abstractions</AssemblyName>
+    <!-- Contract assembly: breaking it breaks every third-party plugin in the field. -->
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <PackageId>AiGisConverter.Plugins.Sdk</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AiGisConverter.Domain\AiGisConverter.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+</Project>

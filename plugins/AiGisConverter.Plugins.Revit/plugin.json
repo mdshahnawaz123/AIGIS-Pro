@@ -1,0 +1,24 @@
+{
+  "id": "aigis.reader.revit",
+  "name": "Revit Reader",
+  "version": "1.0.0",
+  "sdkVersion": "1.0",
+  "publisher": "AI GIS Converter",
+  "description": "Reads .rvt/.rfa through an add-in running inside Revit.",
+  "entryAssembly": "AiGisConverter.Plugins.Revit.dll",
+  "entryType": "AiGisConverter.Plugins.Revit.RevitPlugin",
+  "isolation": "OutOfProcess",
+  "capabilities": [
+    "DataSourceReader"
+  ],
+  "enabled": true,
+  "loadOrder": 100,
+  "sharedAssemblies": [],
+  "hostApplication": {
+    "name": "Revit",
+    "minimumVersion": "2024",
+    "pipeName": "AiGisConverter.Bridge.Revit",
+    "headlessExecutable": null,
+    "allowAutoLaunch": false
+  }
+}

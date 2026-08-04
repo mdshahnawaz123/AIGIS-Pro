@@ -1,0 +1,26 @@
+<Project>
+
+  <!--
+    Stages each plugin into artifacts/plugins/<AssemblyName>/ so the host's default search path
+    ("Plugins", resolved next to the executable) finds a folder-per-plugin layout identical to the
+    one a third-party installer would produce. First-party plugins are deliberately deployed the
+    same way as third-party ones: if the shape is awkward for outsiders, it should be awkward for
+    us too, where we will notice.
+  -->
+  <Target Name="StagePlugin" AfterTargets="Build" Condition="'$(IsPluginProject)' == 'true'">
+    <PropertyGroup>
+      <PluginStagingDirectory>$(PluginStagingRoot)$(AssemblyName)\</PluginStagingDirectory>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PluginPayload Include="$(TargetDir)**\*.*" Exclude="$(TargetDir)**\*.pdb" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(PluginPayload)"
+          DestinationFiles="@(PluginPayload->'$(PluginStagingDirectory)%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+
+    <Message Importance="normal" Text="Staged plugin $(AssemblyName) to $(PluginStagingDirectory)" />
+  </Target>
+
+</Project>

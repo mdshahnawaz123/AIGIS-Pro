@@ -1,0 +1,15 @@
+{
+  "id": "aigis.ai.providers",
+  "name": "AI Providers",
+  "version": "1.0.0",
+  "sdkVersion": "1.0",
+  "publisher": "AI GIS Converter",
+  "description": "Adds OpenAI-compatible chat endpoints (LM Studio, vLLM, OpenRouter, Azure OpenAI) as AI classification providers.",
+  "entryAssembly": "AiGisConverter.Plugins.AiProviders.dll",
+  "entryType": "AiGisConverter.Plugins.AiProviders.AiProvidersPlugin",
+  "isolation": "Isolated",
+  "capabilities": [ "AIProvider" ],
+  "enabled": true,
+  "loadOrder": 60,
+  "sharedAssemblies": []
+}

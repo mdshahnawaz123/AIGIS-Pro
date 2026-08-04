@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Converter-side client for host-bound add-ins (AutoCAD, Civil 3D, Revit).
+    Referenced by those plugins; never by the add-in itself, which only sees Bridge.Protocol.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AiGisConverter.Bridge.Client</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AiGisConverter.Domain\AiGisConverter.Domain.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Bridge.Protocol\AiGisConverter.Bridge.Protocol.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NetTopologySuite" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+
+</Project>

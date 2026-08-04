@@ -1,0 +1,57 @@
+<UserControl x:Class="AiGisConverter.Presentation.Views.Pages.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <TextBlock Text="Settings" Style="{StaticResource HeadingStyle}" />
+            <TextBlock Style="{StaticResource CaptionStyle}" Margin="0,0,0,12"
+                       Text="Settings are edited in appsettings.json and in profile files, and reloaded automatically. This page reports what is in force." />
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,8">
+                        <Button DockPanel.Dock="Right" Content="Check" Command="{Binding ProbeCommand}" />
+                        <Button DockPanel.Dock="Right" Content="Refresh" Command="{Binding RefreshCommand}" />
+                        <TextBlock Text="AI classification" FontWeight="SemiBold" />
+                    </DockPanel>
+
+                    <TextBlock Text="{Binding ActiveProvider, StringFormat=Active provider: {0}}" />
+                    <TextBlock Text="{Binding ProviderStatus}" Style="{StaticResource CaptionStyle}" />
+
+                    <ListView ItemsSource="{Binding Providers}" MaxHeight="180" Margin="0,8,0,0">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Key" Width="130" DisplayMemberBinding="{Binding Key}" />
+                                <GridViewColumn Header="Name" Width="220"
+                                                DisplayMemberBinding="{Binding DisplayName}" />
+                                <GridViewColumn Header="Kind" Width="120" DisplayMemberBinding="{Binding Kind}" />
+                                <GridViewColumn Header="Network" Width="80"
+                                                DisplayMemberBinding="{Binding RequiresNetwork}" />
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel>
+                    <TextBlock Text="Conversion profiles" FontWeight="SemiBold" Margin="0,0,0,8" />
+                    <ListView ItemsSource="{Binding Profiles}" MaxHeight="240">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Id" Width="180" DisplayMemberBinding="{Binding Id}" />
+                                <GridViewColumn Header="Name" Width="200" DisplayMemberBinding="{Binding Name}" />
+                                <GridViewColumn Header="CRS" Width="110"
+                                                DisplayMemberBinding="{Binding OutputCrs}" />
+                                <GridViewColumn Header="Format" Width="110"
+                                                DisplayMemberBinding="{Binding ExportFormat}" />
+                                <GridViewColumn Header="Description" Width="380"
+                                                DisplayMemberBinding="{Binding Description}" />
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

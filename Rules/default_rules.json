@@ -1,0 +1,50 @@
+{
+  "ProfileId": "default-001",
+  "Name": "Default GIS Mapping Profile",
+  "Author": "AI Assistant",
+  "Version": "1.0",
+  "SupportedCRS": "EPSG:4326",
+  "Rules": [
+    {
+      "RuleName": "Road Centerline",
+      "Priority": 100,
+      "TargetFeatureClass": "Road",
+      "LayerNames": ["ROAD_CL"],
+      "GeometryTypes": ["Line"]
+    },
+    {
+      "RuleName": "Building Polygon",
+      "Priority": 100,
+      "TargetFeatureClass": "Building",
+      "LayerNames": ["BLDG"],
+      "GeometryTypes": ["Polygon"]
+    },
+    {
+      "RuleName": "Tree Point",
+      "Priority": 100,
+      "TargetFeatureClass": "Tree",
+      "LayerNames": ["TREE"],
+      "GeometryTypes": ["Point"]
+    },
+    {
+      "RuleName": "Utility Node",
+      "Priority": 100,
+      "TargetFeatureClass": "Manhole",
+      "LayerNames": ["UTILITY"],
+      "GeometryTypes": ["Polygon"]
+    },
+    {
+      "RuleName": "Parcel Boundary",
+      "Priority": 100,
+      "TargetFeatureClass": "Parcel",
+      "LayerNames": ["PARCEL"],
+      "GeometryTypes": ["Polygon"]
+    },
+    {
+      "RuleName": "Text Annotation",
+      "Priority": 10,
+      "TargetFeatureClass": "Annotation",
+      "LayerNames": ["ANNOTATION"]
+    }
+  ]
+}

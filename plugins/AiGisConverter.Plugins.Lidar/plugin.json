@@ -1,0 +1,17 @@
+{
+  "id": "aigis.reader.lidar",
+  "name": "LiDAR Reader",
+  "version": "1.0.0",
+  "sdkVersion": "1.0",
+  "publisher": "AI GIS Converter",
+  "description": "Reads *.las *.laz into the converter's format-neutral source model.",
+  "entryAssembly": "AiGisConverter.Plugins.Lidar.dll",
+  "entryType": "AiGisConverter.Plugins.Lidar.LidarPlugin",
+  "isolation": "Isolated",
+  "capabilities": [
+    "DataSourceReader"
+  ],
+  "enabled": true,
+  "loadOrder": 100,
+  "sharedAssemblies": []
+}

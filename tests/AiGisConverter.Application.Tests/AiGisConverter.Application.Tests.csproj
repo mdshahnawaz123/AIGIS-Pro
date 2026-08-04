@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AiGisConverter.Application.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AiGisConverter.Application\AiGisConverter.Application.csproj" />
+    <ProjectReference Include="..\..\src\AiGisConverter.Domain\AiGisConverter.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

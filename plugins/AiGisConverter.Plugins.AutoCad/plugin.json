@@ -1,0 +1,24 @@
+{
+  "id": "aigis.reader.autocad",
+  "name": "AutoCAD Reader",
+  "version": "1.0.0",
+  "sdkVersion": "1.0",
+  "publisher": "AI GIS Converter",
+  "description": "Reads .dwg through an add-in running inside AutoCAD.",
+  "entryAssembly": "AiGisConverter.Plugins.AutoCad.dll",
+  "entryType": "AiGisConverter.Plugins.AutoCad.AutoCadPlugin",
+  "isolation": "OutOfProcess",
+  "capabilities": [
+    "DataSourceReader"
+  ],
+  "enabled": true,
+  "loadOrder": 100,
+  "sharedAssemblies": [],
+  "hostApplication": {
+    "name": "AutoCAD",
+    "minimumVersion": "2022",
+    "pipeName": "AiGisConverter.Bridge.AutoCAD",
+    "headlessExecutable": "accoreconsole.exe",
+    "allowAutoLaunch": false
+  }
+}

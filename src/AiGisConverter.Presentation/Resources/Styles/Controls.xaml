@@ -1,0 +1,58 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Deliberately small. A conversion tool is judged on whether it converts, and a bespoke
+         theme is a maintenance cost that competes with that. These are spacing and legibility
+         defaults, not a design system. -->
+
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="MutedBrush" Color="#666666" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#E0E0E0" />
+    <SolidColorBrush x:Key="CriticalBrush" Color="#8C1D18" />
+    <SolidColorBrush x:Key="ErrorBrush" Color="#B3261E" />
+    <SolidColorBrush x:Key="WarningBrush" Color="#8A6100" />
+    <SolidColorBrush x:Key="InformationBrush" Color="#555555" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="#0B6B2F" />
+
+    <Style TargetType="TextBlock">
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="HeadingStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="0,0,0,12" />
+    </Style>
+
+    <Style x:Key="CaptionStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <Style TargetType="Button">
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="Margin" Value="0,0,8,0" />
+        <Setter Property="MinWidth" Value="96" />
+    </Style>
+
+    <Style TargetType="TextBox">
+        <Setter Property="Padding" Value="6,4" />
+        <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+
+    <Style TargetType="ComboBox">
+        <Setter Property="Padding" Value="6,4" />
+        <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+
+    <Style x:Key="CardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="Margin" Value="0,0,0,12" />
+    </Style>
+
+</ResourceDictionary>

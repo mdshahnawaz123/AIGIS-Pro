@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Layer: QA/QC. Dataset-level data-quality rules and report rendering.
+
+    Distinct from Domain.Validation, which enforces entity invariants (is the software correct),
+    and from the GIS layer's per-feature GeometryValidator (is this one geometry sound). This layer
+    answers the question neither can: is the dataset, as a whole, fit to deliver.
+
+    IValidationRule is a plugin-contributable capability, so this assembly is in the host's
+    shared-assembly list and must stay dependency-light.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AiGisConverter.QaQc</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AiGisConverter.Domain\AiGisConverter.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NetTopologySuite" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,15 @@
+{
+  "id": "aigis.sample.custom",
+  "name": "Custom Extensions (template)",
+  "version": "1.0.0",
+  "sdkVersion": "1.0",
+  "publisher": "AI GIS Converter",
+  "description": "Template for third-party plugins. Ships a working delimited-point reader as a worked example.",
+  "entryAssembly": "AiGisConverter.Plugins.CustomExtensions.dll",
+  "entryType": "AiGisConverter.Plugins.CustomExtensions.CustomExtensionsPlugin",
+  "isolation": "Isolated",
+  "capabilities": [ "DataSourceReader" ],
+  "enabled": true,
+  "loadOrder": 900,
+  "sharedAssemblies": []
+}

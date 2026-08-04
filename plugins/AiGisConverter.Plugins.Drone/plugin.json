@@ -1,0 +1,17 @@
+{
+  "id": "aigis.reader.drone",
+  "name": "Drone Survey Reader",
+  "version": "1.0.0",
+  "sdkVersion": "1.0",
+  "publisher": "AI GIS Converter",
+  "description": "Reads *.tif *.tiff *.obj into the converter's format-neutral source model.",
+  "entryAssembly": "AiGisConverter.Plugins.Drone.dll",
+  "entryType": "AiGisConverter.Plugins.Drone.DronePlugin",
+  "isolation": "Isolated",
+  "capabilities": [
+    "DataSourceReader"
+  ],
+  "enabled": true,
+  "loadOrder": 100,
+  "sharedAssemblies": []
+}

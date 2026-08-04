@@ -1,0 +1,75 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Layer: Presentation. WPF (MVVM) shell and the application composition root. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!--
+      App.xaml would normally generate the entry point, but a generated Main cannot be async and
+      cannot own an IHost. Program.Main builds the host, then hands the provider to App.
+    -->
+    <StartupObject>AiGisConverter.Presentation.Program</StartupObject>
+    <RootNamespace>AiGisConverter.Presentation</RootNamespace>
+    <AssemblyName>AiGisConverter</AssemblyName>
+
+    <PlatformTarget>x64</PlatformTarget>
+    <Platforms>x64</Platforms>
+    <!--
+      No RuntimeIdentifier. Setting one flattens every package's RID-specific native assets into
+      the output root, which drops the "maxrev.gdal.core.libshared" folder GDAL and PROJ read their
+      data from; MaxRev.Gdal.Core.ConfigureAll then cannot initialise the native stack and every
+      coordinate transformation fails with a type-initializer error. Without a RID the assets keep
+      their runtimes/win-x64/native layout and the host resolves them through deps.json - which is
+      exactly why the test projects, which set no RID, could transform all along.
+      PlatformTarget still pins the process to x64, which is what the native payload requires.
+    -->
+    <SelfContained>false</SelfContained>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ApplicationDefinition Remove="App.xaml" />
+    <Page Include="App.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AiGisConverter.Domain\AiGisConverter.Domain.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Application\AiGisConverter.Application.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Business\AiGisConverter.Business.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Cad\AiGisConverter.Cad.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Gis\AiGisConverter.Gis.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Ai\AiGisConverter.Ai.csproj" />
+    <ProjectReference Include="..\AiGisConverter.QaQc\AiGisConverter.QaQc.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Data\AiGisConverter.Data.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Infrastructure\AiGisConverter.Infrastructure.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Plugins.Abstractions\AiGisConverter.Plugins.Abstractions.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Plugins.Hosting\AiGisConverter.Plugins.Hosting.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Composition\AiGisConverter.Composition.csproj" />
+    <ProjectReference Include="..\AiGisConverter.MappingEditor\AiGisConverter.MappingEditor.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.Development.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The seam between the plugin system and the layers that consume its capabilities.
+
+    It exists so that neither side has to know about the other: AiGisConverter.Ai must not
+    reference the plugin host, and the plugin host must not reference the AI, GIS or QA/QC layers.
+    Everything that would otherwise force one of those references lives here instead, and only a
+    composition root (the WPF app, a CLI, an integration test) references this project.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AiGisConverter.Composition</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AiGisConverter.Domain\AiGisConverter.Domain.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Ai\AiGisConverter.Ai.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Plugins.Abstractions\AiGisConverter.Plugins.Abstractions.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Plugins.Hosting\AiGisConverter.Plugins.Hosting.csproj" />
+    <ProjectReference Include="..\AiGisConverter.QaQc\AiGisConverter.QaQc.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Application\AiGisConverter.Application.csproj" />
+    <ProjectReference Include="..\AiGisConverter.Gis\AiGisConverter.Gis.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+</Project>

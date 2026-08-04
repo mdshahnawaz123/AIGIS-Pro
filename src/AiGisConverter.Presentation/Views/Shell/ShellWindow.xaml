@@ -1,0 +1,103 @@
+<Window x:Class="AiGisConverter.Presentation.Views.Shell.ShellWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:AiGisConverter.Presentation.ViewModels"
+        xmlns:pages="clr-namespace:AiGisConverter.Presentation.Views.Pages"
+        xmlns:conv="clr-namespace:AiGisConverter.Presentation.Converters"
+        xmlns:mevm="clr-namespace:AiGisConverter.MappingEditor.Presentation.ViewModels;assembly=AiGisConverter.MappingEditor"
+        xmlns:mev="clr-namespace:AiGisConverter.MappingEditor.Presentation.Views;assembly=AiGisConverter.MappingEditor"
+        Title="{Binding Title}" Height="760" Width="1180" WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <conv:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+        <!-- The shell shows whichever view model is current; the mapping is here so navigation
+             never touches a view type. -->
+        <DataTemplate DataType="{x:Type vm:ProjectViewModel}">
+            <pages:ProjectView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ConversionViewModel}">
+            <pages:ConversionView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:QaQcViewModel}">
+            <pages:QaQcView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PluginsViewModel}">
+            <pages:PluginsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+            <pages:SettingsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type mevm:MappingEditorViewModel}">
+            <mev:MappingEditorView />
+        </DataTemplate>
+    </Window.Resources>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="#FFF4E5" Padding="12,8"
+                Visibility="{Binding HasStartupWarnings, Converter={StaticResource BoolToVisibility}}">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="Dismiss" MinWidth="80"
+                        Command="{Binding DismissWarningsCommand}" />
+                <ItemsControl ItemsSource="{Binding StartupWarnings}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" Margin="0,1" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem>
+                <TextBlock Text="{Binding Conversion.Status}" />
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <TextBlock Text="History unavailable" Foreground="#B3261E"
+                           Visibility="{Binding IsDatabaseAvailable, Converter={StaticResource BoolToVisibility},
+                                                ConverterParameter=Invert}" />
+            </StatusBarItem>
+        </StatusBar>
+
+        <Border DockPanel.Dock="Left" Width="200" BorderBrush="#E0E0E0" BorderThickness="0,0,1,0">
+            <StackPanel Margin="12">
+                <TextBlock Text="AI GIS Converter" Style="{StaticResource HeadingStyle}" />
+                <Button Content="Project" HorizontalContentAlignment="Left" Margin="0,0,0,4"
+                        Command="{Binding NavigateCommand}" CommandParameter="{Binding Project}" />
+                <Button Content="Convert" HorizontalContentAlignment="Left" Margin="0,0,0,4"
+                        Command="{Binding NavigateCommand}" CommandParameter="{Binding Conversion}" />
+                <Button Content="Quality" HorizontalContentAlignment="Left" Margin="0,0,0,4"
+                        Command="{Binding NavigateCommand}" CommandParameter="{Binding QaQc}" />
+                <Button Content="Mapping Editor" HorizontalContentAlignment="Left" Margin="0,0,0,4"
+                        Command="{Binding NavigateCommand}" CommandParameter="{Binding MappingEditor}" />
+                <Button Content="Plugins" HorizontalContentAlignment="Left" Margin="0,0,0,4"
+                        Command="{Binding NavigateCommand}" CommandParameter="{Binding Plugins}" />
+                <Button Content="Settings" HorizontalContentAlignment="Left"
+                        Command="{Binding NavigateCommand}" CommandParameter="{Binding Settings}" />
+
+                <Separator Margin="0,16" />
+
+                <DockPanel>
+                    <TextBlock Text="Activity" FontWeight="SemiBold" />
+                    <Button DockPanel.Dock="Right" Content="Clear" MinWidth="52" Padding="6,2"
+                            Command="{Binding ClearNotificationsCommand}" />
+                </DockPanel>
+
+                <ListBox ItemsSource="{Binding Notifications}" MaxHeight="320" Margin="0,8,0,0"
+                         BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="0,2">
+                                <TextBlock Text="{Binding Title}" FontSize="12" />
+                                <TextBlock Text="{Binding Detail}" Style="{StaticResource CaptionStyle}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </StackPanel>
+        </Border>
+
+        <ContentControl Content="{Binding CurrentPage}" Margin="20" />
+    </DockPanel>
+</Window>

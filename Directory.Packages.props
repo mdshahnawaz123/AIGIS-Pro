@@ -1,0 +1,80 @@
+<Project>
+  <!-- Central Package Management: versions are declared once, here. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup Label="Microsoft.Extensions">
+    <PackageVersion Include="MahApps.Metro.IconPacks" Version="6.2.1" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="8.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Options.DataAnnotations" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
+  </ItemGroup>
+  <ItemGroup Label="Logging">
+    <PackageVersion Include="Serilog" Version="4.0.1" />
+    <PackageVersion Include="Serilog.Extensions.Hosting" Version="8.0.0" />
+    <PackageVersion Include="Serilog.Extensions.Logging" Version="8.0.0" />
+    <PackageVersion Include="Serilog.Settings.Configuration" Version="8.0.2" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageVersion Include="Serilog.Sinks.Debug" Version="3.0.0" />
+  </ItemGroup>
+  <ItemGroup Label="Persistence">
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.10" />
+  </ItemGroup>
+  <ItemGroup Label="GIS">
+    <!-- Direct, read-only queries against PROJ's bundled proj.db (the full EPSG catalogue).
+         Pinned to the EF Core line already in the solution so SQLitePCLRaw stays single-versioned. -->
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+    <PackageVersion Include="NetTopologySuite" Version="2.5.0" />
+    <PackageVersion Include="NetTopologySuite.IO.GeoJSON4STJ" Version="4.0.0" />
+    <PackageVersion Include="ProjNet" Version="2.0.0" />
+    <PackageVersion Include="MaxRev.Gdal.Core" Version="3.9.3.266" />
+    <PackageVersion Include="MaxRev.Gdal.WindowsRuntime.Minimal" Version="3.9.3.266" />
+  </ItemGroup>
+  <ItemGroup Label="BIM">
+    <!--
+      xBIM Essentials: managed, cross-platform STEP parser + IFC schema model (IFC2x3 / IFC4 /
+      IFC4x3 via the schema-neutral Xbim.Ifc4.Interfaces layer). Deliberately NOT Xbim.Geometry,
+      whose solid tessellation engine is a Windows-only native component and belongs to the later
+      3D phase. Confirm the exact patch against nuget.org - restore could not run in the authoring
+      environment (NuGet was firewalled).
+    -->
+    <PackageVersion Include="Xbim.Essentials" Version="6.0.445" />
+  </ItemGroup>
+  <ItemGroup Label="CAD">
+    <PackageVersion Include="netDxf.netstandard" Version="3.0.1" />
+  </ItemGroup>
+  <ItemGroup Label="AI">
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.19.2" />
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime.Managed" Version="1.19.2" />
+    <PackageVersion Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+  <ItemGroup Label="UI">
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <PackageVersion Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+  </ItemGroup>
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageVersion Include="xunit" Version="2.9.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="FluentAssertions" Version="6.12.1" />
+    <PackageVersion Include="NSubstitute" Version="5.1.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.10" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
+  </ItemGroup>
+</Project>

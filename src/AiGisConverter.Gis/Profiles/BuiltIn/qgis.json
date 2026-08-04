@@ -1,0 +1,14 @@
+{
+  "id": "qgis",
+  "name": "QGIS GeoPackage",
+  "description": "GeoPackage with no name mangling and no forced multi-part. QGIS handles mixed geometry and long names.",
+  "extends": "generic-geojson",
+  "exportFormat": "GeoPackage",
+  "naming": { "case": "Lower", "separator": "_", "asciiOnly": false },
+  "geometry": {
+    "promoteToMulti": false,
+    "includeZ": true,
+    "exteriorRingOrientation": "CounterClockwise",
+    "explodeCollections": false
+  }
+}

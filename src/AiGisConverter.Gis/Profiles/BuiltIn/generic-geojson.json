@@ -1,0 +1,17 @@
+{
+  "id": "generic-geojson",
+  "name": "Generic GeoJSON",
+  "description": "RFC 7946 defaults. WGS 84, counter-clockwise exterior rings, no name mangling.",
+  "outputCrs": "EPSG:4326",
+  "exportFormat": "GeoJson",
+  "precisionScale": 10000000,
+  "chordTolerance": 0.000001,
+  "naming": { "case": "Preserve", "separator": "_", "asciiOnly": false },
+  "geometry": {
+    "promoteToMulti": false,
+    "includeZ": true,
+    "exteriorRingOrientation": "CounterClockwise",
+    "explodeCollections": true
+  },
+  "qa": { "failAtOrAbove": "Critical" }
+}

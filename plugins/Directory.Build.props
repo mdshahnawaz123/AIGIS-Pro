@@ -1,0 +1,19 @@
+<Project>
+
+  <!-- Inherit solution-wide settings, then apply plugin-project defaults. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPluginProject>true</IsPluginProject>
+    <!-- Each plugin publishes into its own folder; the host scans one level down. -->
+    <PluginStagingRoot>$(MSBuildThisFileDirectory)..\artifacts\plugins\</PluginStagingRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="plugin.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

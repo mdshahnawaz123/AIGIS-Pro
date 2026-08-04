@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>AiGisConverter.Plugins.LandXml</RootNamespace>
+    <AssemblyName>AiGisConverter.Plugins.LandXml</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The reader's parsing helpers stay internal to the plugin; the tests assert them directly
+         rather than only through the public reader, so the coordinate-order rules can be pinned. -->
+    <InternalsVisibleTo Include="AiGisConverter.Plugins.LandXml.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Contract assemblies are resolved from the host's load context, never from the plugin folder.
+      LandXML needs no third-party library: it is XML, so System.Xml.Linq is enough and the reader
+      has no native dependency to deploy.
+    -->
+    <ProjectReference Include="..\..\src\AiGisConverter.Domain\AiGisConverter.Domain.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\AiGisConverter.Plugins.Abstractions\AiGisConverter.Plugins.Abstractions.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+</Project>

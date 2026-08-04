@@ -1,0 +1,671 @@
+<UserControl x:Class="AiGisConverter.MappingEditor.Presentation.Views.MappingEditorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+             xmlns:controls="clr-namespace:AiGisConverter.MappingEditor.Presentation.Controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="1000"
+             Background="#1E1E1E" Foreground="White">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <local:NotNullConverter xmlns:local="clr-namespace:AiGisConverter.MappingEditor.Presentation.Converters" x:Key="NotNullConverter" />
+            <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <UserControl.InputBindings>
+        <KeyBinding Key="Z" Modifiers="Ctrl" Command="{Binding UndoCommand}" />
+        <KeyBinding Key="Y" Modifiers="Ctrl" Command="{Binding RedoCommand}" />
+        <KeyBinding Key="Z" Modifiers="Ctrl+Shift" Command="{Binding UndoMeasurementCommand}" />
+        <KeyBinding Key="Y" Modifiers="Ctrl+Shift" Command="{Binding RedoMeasurementCommand}" />
+    </UserControl.InputBindings>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="0" Background="#252526" BorderBrush="#333" BorderThickness="0,0,0,1" Padding="5">
+            <ToolBarTray Background="Transparent">
+                <ToolBar Background="Transparent" ToolBarTray.IsLocked="True" Loaded="ToolBar_Loaded">
+                    <ToolBar.Resources>
+                        <Style TargetType="{x:Type ToolBarPanel}">
+                            <Setter Property="Orientation" Value="Horizontal"/>
+                        </Style>
+                    </ToolBar.Resources>
+                    <Button Command="{Binding NewProfileCommand}" ToolTip="New Profile" Margin="2">
+                        <iconPacks:PackIconMaterial Kind="FileDocumentOutline" Foreground="White" Width="16" Height="16"/>
+                    </Button>
+                    <Button Command="{Binding OpenProfileCommand}" ToolTip="Open Profile" Margin="2">
+                        <iconPacks:PackIconMaterial Kind="FolderOpenOutline" Foreground="White" Width="16" Height="16"/>
+                    </Button>
+                    <Button Command="{Binding SaveProfileCommand}" ToolTip="Save Profile" Margin="2">
+                        <iconPacks:PackIconMaterial Kind="ContentSaveOutline" Foreground="White" Width="16" Height="16"/>
+                    </Button>
+                    <Separator Margin="5,0"/>
+                    <Button Command="{Binding UndoCommand}" ToolTip="Undo" Margin="2">
+                        <iconPacks:PackIconMaterial Kind="Undo" Foreground="White" Width="16" Height="16"/>
+                    </Button>
+                    <Button Command="{Binding RedoCommand}" ToolTip="Redo" Margin="2">
+                        <iconPacks:PackIconMaterial Kind="Redo" Foreground="White" Width="16" Height="16"/>
+                    </Button>
+                    <Separator Margin="5,0"/>
+                    <Button Command="{Binding GenerateInitialRulesCommand}" ToolTip="Generate Initial Rules (Auto)" Margin="2">
+                        <iconPacks:PackIconMaterial Kind="AutoFix" Foreground="Gold" Width="16" Height="16"/>
+                    </Button>
+                    <Separator Margin="5,0"/>
+                    <Button Command="{Binding ValidateCommand}" ToolTip="Validate Rules" Margin="2">
+                        <iconPacks:PackIconMaterial Kind="CheckAll" Foreground="White" Width="16" Height="16"/>
+                    </Button>
+                    <Button Command="{Binding RunSimulationCommand}" ToolTip="Test Map" Margin="2">
+                        <iconPacks:PackIconMaterial Kind="PlayOutline" Foreground="#00FF00" Width="16" Height="16"/>
+                    </Button>
+                    <Button Command="{Binding ShowStatisticsCommand}" ToolTip="Statistics" Margin="2">
+                        <iconPacks:PackIconMaterial Kind="ChartBar" Foreground="White" Width="16" Height="16"/>
+                    </Button>
+                    <Separator Margin="5,0"/>
+                    <!-- Mapping Tool Modes -->
+                    <RadioButton ToolTip="Select" GroupName="ToolMode" Command="{Binding SetToolModeCommand}" Margin="2" Padding="2" IsChecked="True">
+                        <RadioButton.CommandParameter>
+                            <local:MapToolMode xmlns:local="clr-namespace:AiGisConverter.MappingEditor.Presentation.ViewModels">Select</local:MapToolMode>
+                        </RadioButton.CommandParameter>
+                        <iconPacks:PackIconMaterial Kind="CursorDefaultOutline" Foreground="White" Width="16" Height="16"/>
+                    </RadioButton>
+                    <RadioButton ToolTip="Pan" GroupName="ToolMode" Command="{Binding SetToolModeCommand}" Margin="2" Padding="2">
+                        <RadioButton.CommandParameter>
+                            <local:MapToolMode xmlns:local="clr-namespace:AiGisConverter.MappingEditor.Presentation.ViewModels">Pan</local:MapToolMode>
+                        </RadioButton.CommandParameter>
+                        <iconPacks:PackIconMaterial Kind="HandBackRightOutline" Foreground="White" Width="16" Height="16"/>
+                    </RadioButton>
+                    <RadioButton ToolTip="Measure Distance" GroupName="ToolMode" Command="{Binding SetToolModeCommand}" Margin="2" Padding="2">
+                        <RadioButton.CommandParameter>
+                            <local:MapToolMode xmlns:local="clr-namespace:AiGisConverter.MappingEditor.Presentation.ViewModels">MeasureDistance</local:MapToolMode>
+                        </RadioButton.CommandParameter>
+                        <iconPacks:PackIconMaterial Kind="Ruler" Foreground="White" Width="16" Height="16"/>
+                    </RadioButton>
+                    <RadioButton ToolTip="Measure Area" GroupName="ToolMode" Command="{Binding SetToolModeCommand}" Margin="2" Padding="2">
+                        <RadioButton.CommandParameter>
+                            <local:MapToolMode xmlns:local="clr-namespace:AiGisConverter.MappingEditor.Presentation.ViewModels">MeasureArea</local:MapToolMode>
+                        </RadioButton.CommandParameter>
+                        <iconPacks:PackIconMaterial Kind="ShapePolygonPlus" Foreground="White" Width="16" Height="16"/>
+                    </RadioButton>
+                </ToolBar>
+            </ToolBarTray>
+        </Border>
+
+        <!-- Workspace Layout -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="300" />
+            </Grid.ColumnDefinitions>
+
+            <!-- LEFT PANEL: TabControl -->
+            <Border Grid.Column="0" BorderBrush="#333" BorderThickness="0,0,1,0">
+                <TabControl Background="Transparent" BorderThickness="0">
+                    <TabItem Header="Project Explorer">
+                        <Grid Margin="10">
+                            <TextBlock Text="Project Explorer" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10" />
+                            <TreeView Background="Transparent" Foreground="White" BorderThickness="0" Margin="0,10,0,0">
+                                <TreeViewItem Header="Project" IsExpanded="True">
+                                    <TreeViewItem Header="Current DXF" IsExpanded="True">
+                                        <TreeViewItem Header="{Binding CurrentDxfName, StringFormat=Filename: {0}}" />
+                                        <TreeViewItem Header="{Binding SessionDrawingSize, StringFormat=Drawing Size: {0}}" />
+                                        <TreeViewItem Header="{Binding SessionFeatureCount, StringFormat=Feature Count: {0}}" />
+                                        <TreeViewItem Header="{Binding SessionLayerCount, StringFormat=Layer Count: {0}}" />
+                                        <TreeViewItem Header="{Binding SessionInputCrs, StringFormat=Input CRS: {0}}" />
+                                        <TreeViewItem Header="{Binding SessionOutputCrs, StringFormat=Output CRS: {0}}" />
+                                    </TreeViewItem>
+                                    <TreeViewItem Header="Layers" IsExpanded="True" ItemsSource="{Binding SessionLayers}">
+                                        <TreeViewItem.ItemTemplate>
+                                            <DataTemplate>
+                                                <!-- Click a layer to isolate it on the map. -->
+                                                <Button HorizontalContentAlignment="Left" Background="Transparent"
+                                                        BorderThickness="0" Foreground="White" Padding="2,1"
+                                                        ToolTip="Show only this layer on the map"
+                                                        Command="{Binding DataContext.FilterByLayerCommand,
+                                                                          RelativeSource={RelativeSource AncestorType=TreeView}}"
+                                                        CommandParameter="{Binding}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding Name}" />
+                                                        <TextBlock Text="{Binding EntityCount, StringFormat=  ({0})}" Opacity="0.6" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </TreeViewItem.ItemTemplate>
+                                    </TreeViewItem>
+                                    <TreeViewItem Header="Entity Types" IsExpanded="True" ItemsSource="{Binding SessionEntityTypes}">
+                                        <TreeViewItem.ItemTemplate>
+                                            <DataTemplate>
+                                                <!-- Click to add or remove this type from the selection. -->
+                                                <Button HorizontalContentAlignment="Left" Background="Transparent"
+                                                        BorderThickness="0" Foreground="White" Padding="2,1"
+                                                        ToolTip="Select all entities of this type (click again to deselect)"
+                                                        Command="{Binding DataContext.ToggleEntityTypeCommand,
+                                                                          RelativeSource={RelativeSource AncestorType=TreeView}}"
+                                                        CommandParameter="{Binding Name}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding Name}" />
+                                                        <TextBlock Text="{Binding Count, StringFormat=  ({0})}" Opacity="0.6" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </TreeViewItem.ItemTemplate>
+                                    </TreeViewItem>
+                                    <TreeViewItem Header="Rules" />
+                                    <TreeViewItem Header="Validation" />
+                                    <TreeViewItem Header="Statistics" />
+                                    <TreeViewItem Header="Export" />
+                                </TreeViewItem>
+                            </TreeView>
+
+                            <!-- Conversion summary: how the current result was actually produced. -->
+                            <TextBlock Text="Conversion Summary" FontWeight="SemiBold" Margin="0,14,0,4" Foreground="White" />
+                            <StackPanel>
+                                <TextBlock Foreground="#BBB" FontSize="11" Text="{Binding ConversionSummary.TransformationMethod}" TextWrapping="Wrap" />
+                                <TextBlock Foreground="#BBB" FontSize="11" Text="{Binding ConversionSummary.CrsSource, StringFormat=CRS source: {0}}" />
+                                <TextBlock Foreground="#BBB" FontSize="11" Text="{Binding ConversionSummary.ConfidenceText, StringFormat=Confidence: {0}}" />
+                                <TextBlock Foreground="#BBB" FontSize="11" Text="{Binding ConversionSummary.DrawingUnits, StringFormat=Units: {0}}" />
+                                <TextBlock Foreground="#BBB" FontSize="11" Text="{Binding ConversionSummary.DetectedRegion, StringFormat=Region: {0}}" />
+                                <TextBlock Foreground="#BBB" FontSize="11" Text="{Binding ConversionSummary.EntityCount, StringFormat=Entities: {0}}" />
+                                <TextBlock Foreground="#BBB" FontSize="11" Text="{Binding ConversionSummary.ProcessingTimeText, StringFormat=Processing: {0}}" />
+                                <TextBlock Foreground="#BBB" FontSize="11" Text="{Binding ConversionSummary.ExportFormats, StringFormat=Export: {0}}" />
+                                <TextBlock Foreground="#BBB" FontSize="11" Text="{Binding ConversionSummary.ValidationSummary, StringFormat=Validation: {0}}" TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <!-- History: every conversion this run; click to reopen. -->
+                            <TextBlock Text="History" FontWeight="SemiBold" Margin="0,14,0,4" Foreground="White" />
+                            <ItemsControl ItemsSource="{Binding SessionHistory}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button HorizontalContentAlignment="Left" Margin="0,1" Padding="4,2"
+                                                Background="Transparent" BorderThickness="0" Foreground="#9CDCFE"
+                                                Command="{Binding DataContext.ReopenSessionCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding DxfFileName}" FontSize="11" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock FontSize="10" Opacity="0.7">
+                                                    <Run Text="{Binding Summary.InputCrs, Mode=OneWay}" />
+                                                    <Run Text="→" />
+                                                    <Run Text="{Binding Summary.OutputCrs, Mode=OneWay}" />
+                                                    <Run Text="·" />
+                                                    <Run Text="{Binding FeatureCount, Mode=OneWay}" />
+                                                    <Run Text="features" />
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                    </TabItem>
+                    
+                    <TabItem Header="Rules">
+                        <Grid Margin="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            
+                            <TextBlock Text="Rule Explorer" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10" />
+                            <ComboBox Grid.Row="1" Margin="0,0,0,10" ItemsSource="{Binding Profiles}" SelectedItem="{Binding CurrentProfile}" DisplayMemberPath="Name" />
+                            
+                            <ListBox Grid.Row="2" ItemsSource="{Binding GroupedRules}" SelectedItem="{Binding SelectedRule}" Background="Transparent" Foreground="White" BorderThickness="0">
+                                <ListBox.GroupStyle>
+                                    <GroupStyle>
+                                        <GroupStyle.HeaderTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="#888" Margin="0,10,0,5" />
+                                            </DataTemplate>
+                                        </GroupStyle.HeaderTemplate>
+                                    </GroupStyle>
+                                </ListBox.GroupStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding RuleName}" Padding="5" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                                <Button Content="Add" Command="{Binding AddRuleCommand}" Padding="10,5" Margin="0,0,5,0" />
+                                <Button Content="Delete" Command="{Binding DeleteRuleCommand}" CommandParameter="{Binding SelectedRule}" Padding="10,5" />
+                            </StackPanel>
+                        </Grid>
+                    </TabItem>
+                    
+                    <TabItem Header="Search">
+                        <Grid Margin="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            
+                            <TextBlock Text="Search Rules" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10" />
+                            <TextBox Grid.Row="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Top" Padding="5" Background="#2D2D2D" Foreground="White" />
+                        </Grid>
+                    </TabItem>
+
+                    <TabItem Header="Tools">
+                        <ScrollViewer Margin="10">
+                            <StackPanel>
+                                <TextBlock Text="Snapping Settings" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10" />
+                                <CheckBox Content="Enable Snapping" IsChecked="{Binding SnappingSettings.IsSnappingEnabled}" Foreground="White" Margin="0,0,0,5" />
+                                <StackPanel IsEnabled="{Binding SnappingSettings.IsSnappingEnabled}" Margin="15,0,0,10">
+                                    <Grid Margin="0,0,0,5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Tolerance (px):" Foreground="Gray" VerticalAlignment="Center" Margin="0,0,5,0" />
+                                        <TextBox Grid.Column="1" Text="{Binding SnappingSettings.SnapTolerance}" Background="#2D2D2D" Foreground="White" Padding="2" />
+                                    </Grid>
+                                    <CheckBox Content="Vertex" IsChecked="{Binding SnappingSettings.SnapVertex}" Foreground="White" Margin="0,2" />
+                                    <CheckBox Content="Endpoint" IsChecked="{Binding SnappingSettings.SnapEndpoint}" Foreground="White" Margin="0,2" />
+                                    <CheckBox Content="Midpoint" IsChecked="{Binding SnappingSettings.SnapMidpoint}" Foreground="White" Margin="0,2" />
+                                    <CheckBox Content="Edge" IsChecked="{Binding SnappingSettings.SnapEdge}" Foreground="White" Margin="0,2" />
+                                    <CheckBox Content="Intersection" IsChecked="{Binding SnappingSettings.SnapIntersection}" Foreground="White" Margin="0,2" />
+                                    <CheckBox Content="Center" IsChecked="{Binding SnappingSettings.SnapCenter}" Foreground="White" Margin="0,2" />
+                                    <CheckBox Content="Nearest" IsChecked="{Binding SnappingSettings.SnapNearest}" Foreground="White" Margin="0,2" />
+                                </StackPanel>
+
+                                <Separator Background="#333" Margin="0,10" />
+
+                                <TextBlock Text="Measurements" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <Button Content="Undo" Command="{Binding UndoMeasurementCommand}" Margin="0,0,5,0" Padding="5,2" />
+                                    <Button Content="Redo" Command="{Binding RedoMeasurementCommand}" Margin="0,0,5,0" Padding="5,2" />
+                                    <Button Content="Clear All" Command="{Binding ClearMeasurementsCommand}" Padding="5,2" />
+                                </StackPanel>
+                                
+                                <ItemsControl ItemsSource="{Binding Measurements}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#2D2D2D" Margin="0,2" Padding="5" CornerRadius="3">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    
+                                                    <TextBox Grid.Column="0" Text="{Binding DisplayColor}" Width="50" Background="{Binding DisplayColor}" Foreground="Black" Margin="0,0,5,0" />
+                                                    
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBox Text="{Binding Name}" Background="Transparent" Foreground="White" BorderThickness="0" FontWeight="SemiBold" />
+                                                        <TextBlock Text="{Binding ValueText}" Foreground="LightGray" FontSize="11" />
+                                                    </StackPanel>
+                                                    
+                                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                                        <ToggleButton IsChecked="{Binding IsVisible}" Margin="0,0,5,0">
+                                                            <iconPacks:PackIconMaterial Kind="Eye" Width="12" Height="12" />
+                                                        </ToggleButton>
+                                                        <Button Command="{Binding DataContext.DeleteMeasurementCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}">
+                                                            <iconPacks:PackIconMaterial Kind="TrashCan" Width="12" Height="12" Foreground="Red" />
+                                                        </Button>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#333" />
+
+            <!-- CENTER PANEL: Map Preview & Debugger -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="5" />
+                    <RowDefinition Height="200" />
+                </Grid.RowDefinitions>
+                
+                <!-- Map Preview -->
+                <Grid Grid.Row="0">
+                    <Border Background="White" ClipToBounds="True">
+                        <controls:MapRendererControl x:Name="MapRenderer" ItemsSource="{Binding MapFeatures}" />
+                    </Border>
+                    
+                    <!-- Map Controls Overlay -->
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10">
+                        <Button x:Name="BtnFitExtents" ToolTip="Fit Extents" Width="30" Height="30" Margin="0,0,0,5" Background="#333" BorderThickness="0" Click="BtnFitExtents_Click">
+                            <iconPacks:PackIconMaterial Kind="FitToPageOutline" Foreground="White"/>
+                        </Button>
+                        <Button x:Name="BtnResetView" ToolTip="Reset View" Width="30" Height="30" Background="#333" BorderThickness="0" Click="BtnResetView_Click">
+                            <iconPacks:PackIconMaterial Kind="Refresh" Foreground="White"/>
+                        </Button>
+                    </StackPanel>
+                    
+                    <!-- Map Status Bar -->
+                    <Border Background="#CC1E1E1E" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Padding="10,5">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Cursor:" Foreground="Gray" Margin="0,0,5,0"/>
+                                <TextBlock Text="{Binding MouseWorldX, StringFormat='X: \{0:F2\}'}" Foreground="White" FontFamily="Consolas" Margin="0,0,10,0"/>
+                                <TextBlock Text="{Binding MouseWorldY, StringFormat='Y: \{0:F2\}'}" Foreground="White" FontFamily="Consolas" Margin="0,0,20,0"/>
+                                
+                                <TextBlock Text="{Binding DebuggerText}" Foreground="Yellow" FontFamily="Consolas" MaxWidth="300" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding ScaleText}" Foreground="White" FontFamily="Consolas"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- Statistics Dashboard Overlay -->
+                <Border Grid.Row="0" Background="#EE1E1E1E" Visibility="{Binding IsStatisticsVisible, Converter={StaticResource BoolToVis}}" Padding="20">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock Text="Classification Statistics" FontSize="24" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,20"/>
+                        
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,20">
+                            <Border Background="#333" Padding="15" Margin="0,0,10,0" CornerRadius="5">
+                                <StackPanel>
+                                    <TextBlock Text="Total Features" Foreground="Gray" />
+                                    <TextBlock Text="{Binding Statistics.TotalFeatures}" FontSize="20" Foreground="White" FontWeight="Bold" />
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#333" Padding="15" Margin="0,0,10,0" CornerRadius="5">
+                                <StackPanel>
+                                    <TextBlock Text="Unclassified" Foreground="Gray" />
+                                    <TextBlock Text="{Binding Statistics.UnclassifiedFeatures}" FontSize="20" Foreground="#FF5555" FontWeight="Bold" />
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#333" Padding="15" Margin="0,0,10,0" CornerRadius="5">
+                                <StackPanel>
+                                    <TextBlock Text="Avg Confidence" Foreground="Gray" />
+                                    <TextBlock Text="{Binding Statistics.AverageConfidence, StringFormat=P1}" FontSize="20" Foreground="#00FF00" FontWeight="Bold" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="20" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            
+                            <Border Grid.Column="0" Background="#252526" Padding="10" CornerRadius="5">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Top" Text="Feature Classes" FontSize="16" Foreground="White" Margin="0,0,0,10" />
+                                    <ScrollViewer>
+                                        <ItemsControl ItemsSource="{Binding Statistics.FeatureClassCounts}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Margin="0,2">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="{Binding Key}" Foreground="LightGray" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding Value}" Foreground="White" FontWeight="Bold" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </DockPanel>
+                            </Border>
+                            
+                            <Border Grid.Column="2" Background="#252526" Padding="10" CornerRadius="5">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Top" Text="Rule Usage" FontSize="16" Foreground="White" Margin="0,0,0,10" />
+                                    <ScrollViewer>
+                                        <ItemsControl ItemsSource="{Binding Statistics.RuleUsageCounts}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Margin="0,2">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="{Binding Key}" Foreground="LightGray" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding Value}" Foreground="White" FontWeight="Bold" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </DockPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Border>
+                
+                <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="#333" />
+
+                <!-- Rule Debugger Panel -->
+                <Border Grid.Row="2" Background="#252526" BorderBrush="#333" BorderThickness="0,1,0,0" Padding="10">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        
+                        <Grid Grid.Row="0" Margin="0,0,0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Debugger Output" FontWeight="SemiBold" Foreground="LightGray" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="Accept Drafts" Command="{Binding AcceptPendingRulesCommand}" Visibility="{Binding HasPendingRules, Converter={StaticResource BoolToVis}}" Background="#FF8C00" Foreground="White" Padding="10,2" Margin="5,0"/>
+                                <Button Content="Apply AI Suggestion" Command="{Binding AcceptAiSuggestionCommand}" Visibility="{Binding HasActiveAiSuggestion, Converter={StaticResource BoolToVis}}" Background="#007ACC" Foreground="White" Padding="10,2" Margin="5,0"/>
+                            </StackPanel>
+                        </Grid>
+                        
+                        <ScrollViewer Grid.Row="1">
+                            <TextBlock Text="{Binding DebuggerText}" FontFamily="Consolas" Foreground="#00FF00" />
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <GridSplitter Grid.Column="3" Width="5" HorizontalAlignment="Stretch" Background="#333" />
+
+            <!-- RIGHT PANEL: Rule Properties -->
+            <Border Grid.Column="4" Background="#252526" BorderBrush="#333" BorderThickness="1,0,0,0" Padding="10">
+                <ScrollViewer>
+                    <StackPanel DataContext="{Binding SelectedRule}" IsEnabled="{Binding Converter={StaticResource NotNullConverter}}">
+                        <TextBlock Text="Properties" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,15" />
+                        
+                        <Expander Header="General" IsExpanded="True" Foreground="White" Margin="0,0,0,10">
+                            <StackPanel Margin="5">
+                                <Label Content="Rule Name" Foreground="Gray"/>
+                                <TextBox Text="{Binding RuleName, UpdateSourceTrigger=PropertyChanged}" Background="#2D2D2D" Foreground="White" Padding="5" Margin="0,0,0,5" />
+                                
+                                <Label Content="Target Feature Class" Foreground="Gray"/>
+                                <TextBox Text="{Binding TargetFeatureClass, UpdateSourceTrigger=PropertyChanged}" Background="#2D2D2D" Foreground="White" Padding="5" Margin="0,0,0,5" />
+                                
+                                <Label Content="Priority" Foreground="Gray"/>
+                                <TextBox Text="{Binding Priority, UpdateSourceTrigger=PropertyChanged}" Background="#2D2D2D" Foreground="White" Padding="5" />
+                            </StackPanel>
+                        </Expander>
+
+                        <Expander Header="CAD Attributes" IsExpanded="True" Foreground="White" Margin="0,0,0,10">
+                            <StackPanel Margin="5">
+                                <Label Content="Layer Names (comma separated)" Foreground="Gray"/>
+                                <ComboBox ItemsSource="{Binding DataContext.AvailableLayers, RelativeSource={RelativeSource AncestorType=UserControl}}" Text="{Binding LayerNamesCsv, UpdateSourceTrigger=PropertyChanged}" IsEditable="True" Background="#2D2D2D" Foreground="White" Padding="5" Margin="0,0,0,5" />
+                                
+                                <Label Content="Entity Types (comma separated)" Foreground="Gray"/>
+                                <ComboBox ItemsSource="{Binding DataContext.AvailableEntityTypes, RelativeSource={RelativeSource AncestorType=UserControl}}" Text="{Binding EntityTypesCsv, UpdateSourceTrigger=PropertyChanged}" IsEditable="True" Background="#2D2D2D" Foreground="White" Padding="5" Margin="0,0,0,5" />
+
+                                <Label Content="Colors (comma separated)" Foreground="Gray"/>
+                                <TextBox Text="{Binding ColorsCsv, UpdateSourceTrigger=PropertyChanged}" Background="#2D2D2D" Foreground="White" Padding="5" />
+                            </StackPanel>
+                        </Expander>
+
+                        <Expander Header="Geometrics" IsExpanded="True" Foreground="White" Margin="0,0,0,10">
+                            <StackPanel Margin="5">
+                                <Label Content="Geometry Types" Foreground="Gray"/>
+                                <TextBox Text="{Binding GeometryTypesCsv, UpdateSourceTrigger=PropertyChanged}" Background="#2D2D2D" Foreground="White" Padding="5" Margin="0,0,0,5" />
+                                
+                                <Label Content="Minimum Area" Foreground="Gray"/>
+                                <TextBox Text="{Binding MinimumArea, UpdateSourceTrigger=PropertyChanged}" Background="#2D2D2D" Foreground="White" Padding="5" Margin="0,0,0,5" />
+
+                                <Label Content="Maximum Area" Foreground="Gray"/>
+                                <TextBox Text="{Binding MaximumArea, UpdateSourceTrigger=PropertyChanged}" Background="#2D2D2D" Foreground="White" Padding="5" />
+                            </StackPanel>
+                        </Expander>
+
+                        <Expander Header="Advanced" IsExpanded="False" Foreground="White">
+                            <StackPanel Margin="5">
+                                <Label Content="Text Pattern (Regex)" Foreground="Gray"/>
+                                <TextBox Text="{Binding TextPattern, UpdateSourceTrigger=PropertyChanged}" Background="#2D2D2D" Foreground="White" Padding="5" Margin="0,0,0,5" />
+                                
+                                <Label Content="Required CRS" Foreground="Gray"/>
+                                <TextBox Text="{Binding RequiredCRS, UpdateSourceTrigger=PropertyChanged}" Background="#2D2D2D" Foreground="White" Padding="5" />
+                            </StackPanel>
+                        </Expander>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- Attribute table: the same MapFeatures collection the map draws, viewed as a grid. -->
+        <Border Grid.Row="1" VerticalAlignment="Bottom" Background="#1E1E1E" BorderBrush="#333"
+                BorderThickness="0,1,0,0" Height="260"
+                Visibility="{Binding IsAttributeTableVisible, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <DockPanel Grid.Row="0" Margin="8,6" LastChildFill="True">
+                    <TextBlock DockPanel.Dock="Left" Text="Attribute Table" FontWeight="SemiBold"
+                               Foreground="White" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <Button DockPanel.Dock="Right" Content="Close" Padding="8,2" Margin="6,0,0,0"
+                            Command="{Binding ToggleAttributeTableCommand}" />
+                    <Button DockPanel.Dock="Right" Content="Clear filter" Padding="8,2"
+                            Command="{Binding ClearIsolationCommand}" />
+                    <CheckBox DockPanel.Dock="Right" Content="Selected only" Foreground="White"
+                              VerticalAlignment="Center" Margin="12,0"
+                              IsChecked="{Binding ShowSelectedOnly}" />
+                    <TextBox Background="#2D2D2D" Foreground="White" Padding="5" Margin="0,0,8,0"
+                             ToolTip="Search handle, layer, entity type, class or status"
+                             Text="{Binding AttributeSearchText, UpdateSourceTrigger=PropertyChanged}" />
+                </DockPanel>
+
+                <DataGrid Grid.Row="1" x:Name="AttributeGrid" ItemsSource="{Binding AttributeRows}"
+                          SelectedItem="{Binding SelectedMapFeature, Mode=TwoWay}"
+                          AutoGenerateColumns="False" IsReadOnly="True"
+                          CanUserSortColumns="True" SelectionMode="Extended"
+                          GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                          Background="#1E1E1E" Foreground="White" RowBackground="#252526"
+                          AlternatingRowBackground="#2A2A2B" BorderThickness="0">
+                    <DataGrid.InputBindings>
+                        <MouseBinding MouseAction="LeftDoubleClick"
+                                      Command="{Binding ZoomToSelectedRowsCommand}" />
+                    </DataGrid.InputBindings>
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Zoom to selection" Command="{Binding ZoomToSelectedRowsCommand}" />
+                            <MenuItem Header="Flash selection" Command="{Binding FlashSelectionCommand}" />
+                            <Separator />
+                            <MenuItem Header="Select similar" Command="{Binding SelectSimilarCommand}" />
+                            <MenuItem Header="Invert selection" Command="{Binding InvertSelectionCommand}" />
+                            <MenuItem Header="Isolate selection" Command="{Binding IsolateSelectionCommand}" />
+                            <MenuItem Header="Hide selection" Command="{Binding HideSelectionCommand}" />
+                            <MenuItem Header="Show all" Command="{Binding ShowAllFeaturesCommand}" />
+                            <MenuItem Header="Clear isolation" Command="{Binding ClearIsolationCommand}" />
+                            <Separator />
+                            <MenuItem Header="Copy attributes" Command="{Binding CopySelectedAttributesCommand}" />
+                            <MenuItem Header="Export selection to CSV" Command="{Binding ExportSelectionCommand}" />
+                            <MenuItem Header="Export selection to GeoJSON" Command="{Binding ExportSelectionAsGeoJsonCommand}" />
+                            <Separator />
+                            <MenuItem Header="Save selection set" Command="{Binding SaveSelectionSetCommand}" />
+                            <MenuItem Header="Selection sets" ItemsSource="{Binding SelectionSetNames}">
+                                <MenuItem.ItemContainerStyle>
+                                    <Style TargetType="MenuItem">
+                                        <Setter Property="Header" Value="{Binding}" />
+                                        <Setter Property="Command"
+                                                Value="{Binding DataContext.LoadSelectionSetCommand,
+                                                                RelativeSource={RelativeSource AncestorType=DataGrid}}" />
+                                        <Setter Property="CommandParameter" Value="{Binding}" />
+                                    </Style>
+                                </MenuItem.ItemContainerStyle>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="Create rule from selection" Command="{Binding CreateRuleFromSelectionCommand}" />
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Handle" Binding="{Binding Handle}" Width="70" />
+                        <DataGridTextColumn Header="Layer" Binding="{Binding SourceLayer}" Width="150" />
+                        <DataGridTextColumn Header="Entity" Binding="{Binding EntityType}" Width="100" />
+                        <DataGridTextColumn Header="Geometry" Binding="{Binding GeometryType}" Width="100" />
+                        <DataGridTextColumn Header="Class" Binding="{Binding FeatureClassName}" Width="120" />
+                        <DataGridTextColumn Header="Classification" Binding="{Binding Classification}" Width="120" />
+                        <DataGridTextColumn Header="Confidence" Binding="{Binding Confidence, StringFormat=P0}" Width="80" />
+                        <DataGridTextColumn Header="Length" Binding="{Binding Length, StringFormat=N2}" Width="90" />
+                        <DataGridTextColumn Header="Area" Binding="{Binding Area, StringFormat=N2}" Width="90" />
+                        <DataGridTextColumn Header="Colour" Binding="{Binding Color}" Width="60" />
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+
+        <!-- Status bar: current drawing, CRS, cursor, scale and extent -->
+        <Border Grid.Row="2" Background="#252526" BorderBrush="#333" BorderThickness="0,1,0,0" Padding="10,4">
+            <DockPanel LastChildFill="False">
+                <!-- Right-docked first so the fixed-width readouts keep their space; the filename
+                     on the left takes what remains and ellipsises rather than squeezing them. -->
+                <TextBlock DockPanel.Dock="Right" Foreground="#DDD" Margin="16,0,0,0" FontFamily="Consolas"
+                           TextWrapping="NoWrap" Text="{Binding StatusExtentText, StringFormat=Extent: {0}}" />
+                <TextBlock DockPanel.Dock="Right" Foreground="#DDD" Margin="16,0,0,0" FontFamily="Consolas"
+                           TextWrapping="NoWrap" Text="{Binding ScaleText}" />
+                <TextBlock DockPanel.Dock="Right" Foreground="#DDD" Margin="16,0,0,0" FontFamily="Consolas"
+                           TextWrapping="NoWrap" Text="{Binding CoordinateText}" />
+
+                <TextBlock DockPanel.Dock="Left" Foreground="#9CDCFE" Margin="0,0,16,0"
+                           TextWrapping="NoWrap" Text="{Binding SessionInputCrs, StringFormat=In: {0}}" />
+                <TextBlock DockPanel.Dock="Left" Foreground="#9CDCFE" Margin="0,0,16,0"
+                           TextWrapping="NoWrap" Text="{Binding SessionOutputCrs, StringFormat=Out: {0}}" />
+                <Button DockPanel.Dock="Left" Margin="0,0,16,0" Padding="6,0" Background="Transparent"
+                        BorderThickness="0" Foreground="#9CDCFE" Content="{Binding LayerFilterText}"
+                        ToolTip="Click to clear the layer filter"
+                        Command="{Binding ClearLayerFilterCommand}" />
+                <Button DockPanel.Dock="Left" Margin="0,0,16,0" Padding="6,0" Background="Transparent"
+                        BorderThickness="0" Foreground="#DCDCAA"
+                        Content="{Binding SelectedFeatureCount, StringFormat=Selected: {0:N0}}"
+                        ToolTip="Click to clear the entity-type selection"
+                        Command="{Binding ClearEntityTypesCommand}" />
+                <Button DockPanel.Dock="Left" Margin="0,0,16,0" Padding="6,0" Background="Transparent"
+                        BorderThickness="0" Foreground="#9CDCFE" Content="Attribute Table"
+                        ToolTip="Show or hide the attribute table"
+                        Command="{Binding ToggleAttributeTableCommand}" />
+                <TextBlock DockPanel.Dock="Left" Foreground="#E0A030" Margin="0,0,16,0"
+                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxWidth="300"
+                           Text="{Binding GeoreferenceWarning}" ToolTip="{Binding GeoreferenceWarning}" />
+                <TextBlock Foreground="#DDD" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                           Text="{Binding CurrentDxfName, StringFormat=DXF: {0}}"
+                           ToolTip="{Binding CurrentDxfName}" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

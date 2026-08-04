@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Layer: CAD. Implements the ICadReader port.
+    Providers:
+      * Dxf      - netDxf, always available, no external SDK.
+      * AutoCad  - always compiled, and Autodesk-free. It delegates to IDwgBackend, whose
+                   default implementation reports that no DWG engine is present.
+      * AutoCad\Interop - the licensed Autodesk binding. Excluded from compilation unless:
+                   dotnet build -p:EnableAutoCadProvider=true -p:AutoCadSdkPath=C:\ObjectARX\inc
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AiGisConverter.Cad</RootNamespace>
+    <EnableAutoCadProvider Condition="'$(EnableAutoCadProvider)' == ''">false</EnableAutoCadProvider>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AiGisConverter.Domain\AiGisConverter.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="netDxf.netstandard" />
+    <PackageReference Include="NetTopologySuite" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+
+  <!-- Only the licensed Autodesk binding is excluded; the provider itself always compiles. -->
+  <ItemGroup Condition="'$(EnableAutoCadProvider)' != 'true'">
+    <Compile Remove="Providers\AutoCad\Interop\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(EnableAutoCadProvider)' == 'true'">
+    <Reference Include="accoremgd">
+      <HintPath>$(AutoCadSdkPath)\accoremgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="acdbmgd">
+      <HintPath>$(AutoCadSdkPath)\acdbmgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="acmgd">
+      <HintPath>$(AutoCadSdkPath)\acmgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The wire contract between the converter and add-ins running inside a host CAD application.
+
+    Targets netstandard2.0 deliberately: a Revit 2024 or AutoCAD 2024 add-in runs on
+    .NET Framework 4.8, so it cannot reference a net8.0 assembly. This is the ONLY assembly
+    shared across that boundary - the plugin SDK itself stays net8.0.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>AiGisConverter.Bridge.Protocol</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <!-- netstandard2.0 lacks the modern nullable-aware BCL annotations; keep the contract plain. -->
+    <Nullable>annotations</Nullable>
+    <NoWarn>$(NoWarn);CA1002;CA2227;CA1819</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+
+</Project>
