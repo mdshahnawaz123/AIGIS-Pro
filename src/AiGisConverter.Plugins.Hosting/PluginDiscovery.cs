@@ -46,15 +46,30 @@ public sealed class PluginDiscovery : IPluginDiscovery
         List<PluginDescriptor> descriptors = [];
         HashSet<string> seenIds = new(StringComparer.OrdinalIgnoreCase);
 
+        // Logged at Information, not Debug. When discovery finds nothing there is no other evidence
+        // of why, and the default minimum level means a Debug line is written nowhere at all - so
+        // the one diagnostic that mattered was the one nobody could see.
+        _logger.LogInformation(
+            "Plugin discovery starting. BaseDirectory '{BaseDirectory}', {PathCount} configured search path(s): {SearchPaths}",
+            AppContext.BaseDirectory,
+            options.SearchPaths.Count,
+            string.Join(" | ", options.SearchPaths));
+
         foreach (string searchPath in options.SearchPaths)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             string root = ResolveSearchPath(searchPath);
+            bool exists = Directory.Exists(root);
 
-            if (!Directory.Exists(root))
+            _logger.LogInformation(
+                "Search path '{SearchPath}' resolved to '{ResolvedPath}' (exists: {Exists}).",
+                searchPath,
+                root,
+                exists);
+
+            if (!exists)
             {
-                _logger.LogDebug("Plugin search path '{SearchPath}' does not exist.", root);
                 continue;
             }
 
@@ -63,8 +78,15 @@ public sealed class PluginDiscovery : IPluginDiscovery
                 cancellationToken.ThrowIfCancellationRequested();
 
                 string manifestPath = Path.Combine(directory, PluginManifest.FileName);
+                bool hasManifest = File.Exists(manifestPath);
 
-                if (!File.Exists(manifestPath))
+                _logger.LogInformation(
+                    "Examining plugin folder '{Directory}' ({FileName} present: {HasManifest}).",
+                    directory,
+                    PluginManifest.FileName,
+                    hasManifest);
+
+                if (!hasManifest)
                 {
                     continue;
                 }
@@ -123,16 +145,46 @@ public sealed class PluginDiscovery : IPluginDiscovery
                 return null;
             }
 
+            _logger.LogInformation(
+                "Manifest '{ManifestPath}' loaded: id '{Id}' v{Version}, sdk {SdkVersion}, isolation {Isolation}, entry '{EntryAssembly}', capabilities [{Capabilities}].",
+                manifestPath,
+                manifest.Id,
+                manifest.Version,
+                manifest.SdkVersion,
+                manifest.Isolation,
+                manifest.EntryAssembly,
+                string.Join(", ", manifest.Capabilities));
+
             return new PluginDescriptor(manifest, directory);
         }
         catch (JsonException ex)
         {
-            _logger.LogWarning(ex, "Manifest '{ManifestPath}' is not valid JSON.", manifestPath);
+            // The message and path matter as much as the type: a manifest that fails to parse is
+            // skipped silently by design, and without this the plugin simply never appears.
+            _logger.LogError(
+                ex,
+                "Manifest '{ManifestPath}' could not be deserialised and the plugin was skipped: {Message}",
+                manifestPath,
+                ex.Message);
+
             return null;
         }
         catch (IOException ex)
         {
-            _logger.LogWarning(ex, "Manifest '{ManifestPath}' could not be read.", manifestPath);
+            _logger.LogError(ex, "Manifest '{ManifestPath}' could not be read: {Message}", manifestPath, ex.Message);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            // Nothing here should throw anything else, which is exactly why an unexpected exception
+            // must be recorded rather than allowed to end discovery without explanation.
+            _logger.LogError(
+                ex,
+                "Manifest '{ManifestPath}' failed unexpectedly ({Type}): {Message}",
+                manifestPath,
+                ex.GetType().Name,
+                ex.Message);
+
             return null;
         }
     }
@@ -142,52 +194,56 @@ public sealed class PluginDiscovery : IPluginDiscovery
     {
         PluginManifest manifest = descriptor.Manifest;
 
+        // Every path out of this method sets State and FailureReason; logging the outcome here once
+        // means no gate can reject a plugin without saying so.
+        void Reject(PluginLoadState state, string reason)
+        {
+            descriptor.State = state;
+            descriptor.FailureReason = reason;
+
+            _logger.LogWarning(
+                "Plugin {PluginId} will not be loaded ({State}): {Reason}",
+                descriptor.Id,
+                state,
+                reason);
+        }
+
         if (!manifest.Enabled)
         {
-            descriptor.State = PluginLoadState.Disabled;
-            descriptor.FailureReason = "Disabled in its own manifest.";
+            Reject(PluginLoadState.Disabled, "Disabled in its own manifest.");
             return;
         }
 
         if (options.Enabled.Count > 0 &&
             !options.Enabled.Contains(descriptor.Id, StringComparer.OrdinalIgnoreCase))
         {
-            descriptor.State = PluginLoadState.Disabled;
-            descriptor.FailureReason = "Not in the configured 'Plugins:Enabled' allowlist.";
+            Reject(PluginLoadState.Disabled, "Not in the configured 'Plugins:Enabled' allowlist.");
             return;
         }
 
         if (options.Disabled.Contains(descriptor.Id, StringComparer.OrdinalIgnoreCase))
         {
-            descriptor.State = PluginLoadState.Disabled;
-            descriptor.FailureReason = "Listed in 'Plugins:Disabled'.";
+            Reject(PluginLoadState.Disabled, "Listed in 'Plugins:Disabled'.");
             return;
         }
 
         if (!PluginSdk.IsCompatible(manifest.SdkVersion, out string reason))
         {
-            descriptor.State = PluginLoadState.Rejected;
-            descriptor.FailureReason = reason;
-            _logger.LogWarning("Plugin {PluginId} rejected: {Reason}", descriptor.Id, reason);
+            Reject(PluginLoadState.Rejected, reason);
             return;
         }
 
         if (string.IsNullOrWhiteSpace(manifest.EntryAssembly))
         {
-            descriptor.State = PluginLoadState.Rejected;
-            descriptor.FailureReason = "The manifest does not name an 'entryAssembly'.";
+            Reject(PluginLoadState.Rejected, "The manifest does not name an 'entryAssembly'.");
             return;
         }
 
         if (!File.Exists(descriptor.GetEntryAssemblyPath()))
         {
-            descriptor.State = PluginLoadState.Rejected;
-            descriptor.FailureReason =
-                $"Entry assembly '{manifest.EntryAssembly}' was not found in the plugin folder.";
-            _logger.LogWarning(
-                "Plugin {PluginId} rejected: {Reason}",
-                descriptor.Id,
-                descriptor.FailureReason);
+            Reject(
+                PluginLoadState.Rejected,
+                $"Entry assembly '{manifest.EntryAssembly}' was not found at '{descriptor.GetEntryAssemblyPath()}'.");
         }
     }
 

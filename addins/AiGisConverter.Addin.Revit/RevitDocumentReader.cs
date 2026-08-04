@@ -15,9 +15,11 @@ namespace AiGisConverter.Addin.Revit
     /// Nothing on this type is safe to call from the bridge's listener thread.
     /// </para>
     /// <para>
-    /// No geometry is extracted. Elements carry identity, classification and the parameters the
-    /// semantic layer reads; solids and meshes come later. The distinction matters for cost as much
-    /// as for scope &#8212; enumerating a large model is quick, and tessellating it is not.
+    /// Geometry is extracted as a plan footprint for the supported categories only. The target
+    /// model is two-dimensional, so a solid crosses the bridge as its outline with its height
+    /// alongside as an attribute. Categories outside the supported set are still enumerated, with
+    /// their identity and parameters intact and no geometry - element counts must not change
+    /// because geometry was added.
     /// </para>
     /// </remarks>
     internal static class RevitDocumentReader
@@ -48,7 +50,18 @@ namespace AiGisConverter.Addin.Revit
             }
 
             AddDocumentMetadata(wire, document);
-            AddElements(wire, document);
+
+            // One extractor per read, so the family footprint cache lives exactly as long as the
+            // document traversal that populates it and never spans two models.
+            using (RevitGeometryExtractor extractor = new RevitGeometryExtractor())
+            {
+                AddElements(wire, document, extractor);
+
+                Set(wire.Metadata, "GeometryCacheHits",
+                    extractor.CacheHits.ToString(CultureInfo.InvariantCulture));
+                Set(wire.Metadata, "GeometrySimplifiedRings",
+                    extractor.SimplifiedRings.ToString(CultureInfo.InvariantCulture));
+            }
 
             return wire;
         }
@@ -131,7 +144,10 @@ namespace AiGisConverter.Addin.Revit
             }
         }
 
-        private static void AddElements(BridgeDocument wire, Document document)
+        private static void AddElements(
+            BridgeDocument wire,
+            Document document,
+            RevitGeometryExtractor extractor)
         {
             Dictionary<string, BridgeLayer> layers =
                 new Dictionary<string, BridgeLayer>(StringComparer.OrdinalIgnoreCase);
@@ -150,7 +166,7 @@ namespace AiGisConverter.Addin.Revit
 
                 try
                 {
-                    wireElement = MapElement(document, element);
+                    wireElement = MapElement(document, element, extractor, wire);
                 }
                 catch (Exception exception)
                 {
@@ -205,7 +221,11 @@ namespace AiGisConverter.Addin.Revit
             return element.ViewSpecific == false;
         }
 
-        private static BridgeElement MapElement(Document document, Element element)
+        private static BridgeElement MapElement(
+            Document document,
+            Element element,
+            RevitGeometryExtractor extractor,
+            BridgeDocument wireDocument)
         {
             BridgeElement wire = new BridgeElement
             {
@@ -214,12 +234,13 @@ namespace AiGisConverter.Addin.Revit
                 // feature key has to do.
                 Id = element.UniqueId,
 
-                // No geometry in this slice. Unknown is honest: the element has geometry in Revit,
-                // it simply has not been read, which is a different statement from having none.
                 GeometryKind = "Unknown",
                 GeometryWkt = null,
                 NativeType = element.GetType().Name,
             };
+
+            // The document is passed in only so a geometry warning has somewhere to be recorded.
+            AddGeometry(element, extractor, wireDocument, wire);
 
             // Not IntegerValue: Revit 2024 widened ElementId to 64-bit and deprecated it, and a
             // deprecation warning is a build error here. ToString carries the same value and does
@@ -326,6 +347,100 @@ namespace AiGisConverter.Addin.Revit
             // process with its own locale. A comma decimal separator here becomes a silent
             // ten-thousandfold error there.
             Set(wire.Attributes, name, parameter.AsDouble().ToString("R", CultureInfo.InvariantCulture));
+        }
+
+        /// <summary>
+        /// The categories whose geometry this slice extracts.
+        /// </summary>
+        /// <remarks>
+        /// Built-in category identifiers rather than names, because names are localised and a model
+        /// authored in a non-English Revit would match none of them.
+        /// </remarks>
+        private static readonly HashSet<BuiltInCategory> GeometryCategories = new HashSet<BuiltInCategory>
+        {
+            BuiltInCategory.OST_Walls,
+            BuiltInCategory.OST_Floors,
+            BuiltInCategory.OST_Roofs,
+            BuiltInCategory.OST_StructuralColumns,
+            BuiltInCategory.OST_StructuralFraming,
+            BuiltInCategory.OST_Doors,
+            BuiltInCategory.OST_Windows,
+            BuiltInCategory.OST_GenericModel,
+        };
+
+        /// <summary>Attaches the element's plan footprint, when its category is in scope.</summary>
+        /// <remarks>
+        /// A failure here is recorded and the element still travels. Geometry is an enrichment of an
+        /// element that already carries identity, classification and parameters; dropping the whole
+        /// element because its outline could not be read would lose more than it saved.
+        /// </remarks>
+        private static void AddGeometry(
+            Element element,
+            RevitGeometryExtractor extractor,
+            BridgeDocument wire,
+            BridgeElement target)
+        {
+            if (!IsGeometryCategory(element))
+            {
+                return;
+            }
+
+            string kind;
+            string warning;
+            string wkt;
+
+            try
+            {
+                wkt = extractor.Extract(element, out kind, out warning);
+            }
+            catch (Exception exception)
+            {
+                wire.Warnings.Add(
+                    "Element " + element.Id.ToString() + " geometry failed: " + exception.Message);
+                return;
+            }
+
+            if (warning != null)
+            {
+                wire.Warnings.Add("Element " + element.Id.ToString() + ": " + warning);
+            }
+
+            if (wkt == null)
+            {
+                return;
+            }
+
+            target.GeometryKind = kind;
+            target.GeometryWkt = wkt;
+        }
+
+        /// <summary>
+        /// The supported categories as element ids, built once for comparison against a live one.
+        /// </summary>
+        /// <remarks>
+        /// Comparing <c>ElementId</c> values sidesteps extracting an integer from one
+        /// altogether. <c>ElementId.IntegerValue</c> is deprecated in the 2024 API, and parsing what
+        /// <c>ToString</c> returns would be relying on a format nobody promised.
+        /// </remarks>
+        private static readonly HashSet<ElementId> GeometryCategoryIds = BuildGeometryCategoryIds();
+
+        private static HashSet<ElementId> BuildGeometryCategoryIds()
+        {
+            HashSet<ElementId> ids = new HashSet<ElementId>();
+
+            foreach (BuiltInCategory category in GeometryCategories)
+            {
+                ids.Add(new ElementId(category));
+            }
+
+            return ids;
+        }
+
+        private static bool IsGeometryCategory(Element element)
+        {
+            return element != null
+                && element.Category != null
+                && GeometryCategoryIds.Contains(element.Category.Id);
         }
 
         /// <summary>Reads an element's name, which is not a property every element supports.</summary>

@@ -78,9 +78,16 @@ namespace AiGisConverter.Addin.Revit
             if (!string.IsNullOrEmpty(application.StartupError))
             {
                 detail.AppendLine();
-                detail.AppendLine("The listener could not start: " + application.StartupError);
+                detail.AppendLine("The listener could not start:");
+                detail.AppendLine(application.StartupError);
+                detail.AppendLine();
+
+                // No guessed cause. The chain above names it; asserting one here previously sent a
+                // missing-assembly failure to be investigated as a duplicate Revit session.
                 detail.AppendLine(
-                    "A second Revit session already serving this pipe is the usual cause.");
+                    "Two causes account for most of these: another Revit session already serving "
+                    + "this pipe, or a dependency of the add-in that the runtime could not load "
+                    + "from the add-in folder. The chain above distinguishes them.");
             }
             else if (application.Server != null && !string.IsNullOrEmpty(application.Server.LastError))
             {

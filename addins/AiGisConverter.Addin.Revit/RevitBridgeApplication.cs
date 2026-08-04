@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using AiGisConverter.Bridge.Protocol;
@@ -48,6 +50,81 @@ namespace AiGisConverter.Addin.Revit
 
         private BridgeServer _server;
         private RevitJobQueue _jobs;
+
+        /// <summary>
+        /// Teaches the runtime to find this add-in's own dependencies.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Revit loads the add-in assembly by path, but the application base stays Revit's own
+        /// install folder. Every dependency this assembly needs is therefore probed for beside
+        /// Revit.exe, where it is not, rather than beside the add-in, where it is. Nothing about the
+        /// deployment is wrong; the loader is simply looking somewhere else.
+        /// </para>
+        /// <para>
+        /// The failure this prevents is opaque: <c>System.Text.Json</c> fails to load, the static
+        /// initialiser of the first type that touches it throws, and what surfaces is a
+        /// TypeInitializationException naming a type that has nothing wrong with it.
+        /// </para>
+        /// <para>
+        /// Registered in a static constructor so it is in place before any method body that
+        /// references the protocol types is compiled.
+        /// </para>
+        /// </remarks>
+        static RevitBridgeApplication()
+        {
+            AppDomain.CurrentDomain.AssemblyResolve += ResolveFromAddinFolder;
+        }
+
+        private static Assembly ResolveFromAddinFolder(object sender, ResolveEventArgs args)
+        {
+            if (args == null || string.IsNullOrEmpty(args.Name))
+            {
+                return null;
+            }
+
+            string simpleName;
+
+            try
+            {
+                simpleName = new AssemblyName(args.Name).Name;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+
+            // Satellite assemblies are Revit's business, not this add-in's.
+            if (simpleName == null || simpleName.EndsWith(".resources", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            string directory = Path.GetDirectoryName(typeof(RevitBridgeApplication).Assembly.Location);
+
+            if (string.IsNullOrEmpty(directory))
+            {
+                return null;
+            }
+
+            string candidate = Path.Combine(directory, simpleName + ".dll");
+
+            // Only assemblies this add-in actually ships. Answering for anything else would put
+            // this handler in the middle of Revit's own resolution, which it has no business being.
+            if (!File.Exists(candidate))
+            {
+                return null;
+            }
+
+            try
+            {
+                return Assembly.LoadFrom(candidate);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
 
         /// <summary>Gets the running instance, for the status command.</summary>
         internal static RevitBridgeApplication Current { get; private set; }
@@ -135,9 +212,10 @@ namespace AiGisConverter.Addin.Revit
             }
             catch (Exception exception)
             {
-                // Most likely another Revit session already holds the pipe. Recorded rather than
-                // thrown: one unusable bridge must not stop Revit opening.
-                StartupError = exception.Message;
+                // The whole chain, not just the outer message. A type initializer failure reports
+                // only "the type initializer for X threw an exception", and the sentence that
+                // actually identifies the problem is one or two levels down.
+                StartupError = Describe(exception);
                 _server = null;
             }
         }
@@ -332,6 +410,35 @@ namespace AiGisConverter.Addin.Revit
                 Success = true,
                 Document = RevitDocumentReader.Read(document),
             };
+        }
+
+        /// <summary>Flattens an exception and everything it wraps into one readable chain.</summary>
+        /// <remarks>
+        /// Written after a real failure was reported to the user as a guess. The dialog asserted
+        /// that a second Revit session was holding the pipe, when the actual cause - an assembly
+        /// that could not be found - was sitting unread in the inner exception. A diagnostic that
+        /// speculates is worse than one that says nothing, because it sends someone looking in the
+        /// wrong place with confidence.
+        /// </remarks>
+        /// <param name="exception">The exception to describe.</param>
+        /// <returns>The message chain, outermost first.</returns>
+        private static string Describe(Exception exception)
+        {
+            StringBuilder description = new StringBuilder();
+
+            for (Exception current = exception; current != null; current = current.InnerException)
+            {
+                if (description.Length > 0)
+                {
+                    description.Append(" -> ");
+                }
+
+                description.Append(current.GetType().Name);
+                description.Append(": ");
+                description.Append(current.Message);
+            }
+
+            return description.ToString();
         }
 
         private static string AddinVersion()

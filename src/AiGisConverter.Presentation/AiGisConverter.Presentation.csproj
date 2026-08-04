@@ -72,4 +72,41 @@
     </None>
   </ItemGroup>
 
+  <!--
+    Build-order only. ReferenceOutputAssembly is false, so no plugin assembly is referenced and no
+    plugin type is visible to this project at compile time - the isolation the plugin system exists
+    to provide is untouched. What this buys is ordering: the plugins stage into artifacts/plugins
+    during their own build, and without an edge in the dependency graph a solution build is free to
+    produce this project first and copy an empty folder.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\plugins\**\*.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!--
+    Put the staged plugins where the application actually looks for them.
+
+    PluginOptions.SearchPaths declares "Plugins", which is relative and therefore resolved against
+    AppContext.BaseDirectory - this project's output folder. The plugins, meanwhile, stage into
+    artifacts/plugins so that first-party plugins deploy in exactly the folder-per-plugin shape a
+    third-party installer produces. Both of those are deliberate, and nothing joined them: the
+    application looked in a folder that was never created, and reported no plugins found.
+  -->
+  <Target Name="CopyStagedPluginsToOutput" AfterTargets="Build">
+    <ItemGroup>
+      <StagedPluginPayload Include="$(MSBuildThisFileDirectory)..\..\artifacts\plugins\**\*.*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(StagedPluginPayload)"
+          DestinationFiles="@(StagedPluginPayload->'$(OutDir)Plugins\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+
+    <Message Importance="high"
+             Text="Copied @(StagedPluginPayload->Count()) staged plugin files into $(OutDir)Plugins" />
+  </Target>
+
 </Project>

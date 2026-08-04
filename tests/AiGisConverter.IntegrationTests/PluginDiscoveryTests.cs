@@ -161,6 +161,55 @@ public sealed class PluginDiscoveryTests
             + string.Join(", ", missing));
     }
 
+    [Fact]
+    public void TheApplicationsOwnSearchPath_ContainsTheDeployedPlugins()
+    {
+        // The gap every other test in this file left open.
+        //
+        // The rest of them point at artifacts/plugins, which is where plugins stage - but not where
+        // the application looks. PluginOptions declares the relative path "Plugins", resolved
+        // against AppContext.BaseDirectory, so at runtime that is the Presentation output folder.
+        // Nothing copied one to the other, and the application reported no plugins found while ten
+        // tests here passed against a folder it never reads.
+        string presentationOutput = PresentationOutputDirectory();
+
+        presentationOutput.Should().NotBeEmpty(
+            "the Presentation project must be built before its plugin deployment can be checked");
+
+        string applicationSearchPath = Path.Combine(presentationOutput, "Plugins");
+
+        Directory.Exists(applicationSearchPath).Should().BeTrue(
+            $"'{applicationSearchPath}' is the first entry of Plugins:SearchPaths resolved against "
+            + "the application's base directory; if it does not exist the application finds nothing");
+
+        IReadOnlyList<string> deployed =
+            [.. Directory.EnumerateDirectories(applicationSearchPath)
+                .Where(d => File.Exists(Path.Combine(d, PluginManifest.FileName)))];
+
+        deployed.Should().HaveCount(
+            SourcePluginIds().Count,
+            "every plugin that stages must also reach the folder the application scans");
+    }
+
+    /// <summary>Locates the Presentation build output, which is the application's base directory.</summary>
+    /// <returns>The output folder, or empty when the project has not been built.</returns>
+    private static string PresentationOutputDirectory()
+    {
+        string project = Path.Combine(RepositoryRoot, "src", "AiGisConverter.Presentation", "bin");
+
+        if (!Directory.Exists(project))
+        {
+            return string.Empty;
+        }
+
+        string? host = Directory
+            .EnumerateFiles(project, "AiGisConverter.dll", SearchOption.AllDirectories)
+            .OrderByDescending(File.GetLastWriteTimeUtc)
+            .FirstOrDefault();
+
+        return host is null ? string.Empty : Path.GetDirectoryName(host) ?? string.Empty;
+    }
+
     // ---- discovery ------------------------------------------------------------------------------
 
     [Fact]
