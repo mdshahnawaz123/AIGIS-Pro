@@ -35,6 +35,17 @@ public sealed class IfcPerformanceTests : IDisposable
     /// <summary>Four times the baseline. Quadratic growth would cost sixteen times as much.</summary>
     private const int ScaledElements = 20_000;
 
+    /// <summary>
+    /// The three sizes the scaling test measures, each double the last.
+    /// </summary>
+    /// <remarks>
+    /// Sized so every measurement is far enough above the noise floor to mean something. With the
+    /// inverse cache enabled a five thousand element model reads in about fifty milliseconds, and
+    /// at that scale a stray garbage collection moves the ratio by a whole point - which is how a
+    /// reader that had just improved sixteenfold produced a failing ratio of 10.11.
+    /// </remarks>
+    private static readonly int[] ScalingSizes = [20_000, 40_000, 80_000];
+
     /// <summary>The size used by the opt-in stress test.</summary>
     private const int StressElements = 100_000;
 
@@ -114,28 +125,49 @@ public sealed class IfcPerformanceTests : IDisposable
     public async Task ReadTime_GrowsSubQuadratically_WithModelSize()
     {
         // Warm the JIT and xBIM's static initialisation, otherwise the first read carries one-off
-        // cost and flatters the ratio.
-        _ = await TimeReadAsync(WriteModel(500));
+        // cost that belongs to neither measurement.
+        _ = await TimeReadAsync(WriteModel(2_000));
 
-        (SourceDocument small, TimeSpan smallTime) = await TimeReadAsync(WriteModel(BaselineElements));
-        (SourceDocument large, TimeSpan largeTime) = await TimeReadAsync(WriteModel(ScaledElements));
+        List<TimeSpan> timings = [];
 
-        All(small).Should().HaveCountGreaterThanOrEqualTo(BaselineElements);
-        All(large).Should().HaveCountGreaterThanOrEqualTo(ScaledElements);
+        foreach (int size in ScalingSizes)
+        {
+            (SourceDocument document, TimeSpan elapsed) = await TimeReadAsync(WriteModel(size));
 
-        // Four times the data. Linear costs about 4x, quadratic about 16x. A bound of 10x separates
-        // the two decisively while leaving room for a noisy or throttled machine.
-        double ratio = largeTime.TotalMilliseconds / Math.Max(smallTime.TotalMilliseconds, 1d);
+            All(document).Should().HaveCountGreaterThanOrEqualTo(size);
+            timings.Add(elapsed);
+        }
 
-        _output.WriteLine(
-            $"scaling: {BaselineElements:N0} elements in {smallTime.TotalMilliseconds:F0}ms, "
-            + $"{ScaledElements:N0} in {largeTime.TotalMilliseconds:F0}ms -> {ratio:F2}x for 4x the data "
-            + "(linear ~4x, quadratic ~16x)");
+        // Three points rather than two. A single ratio cannot tell a linear reader having a bad
+        // moment from a genuinely superlinear one; a curve can. Each size doubles, so linear costs
+        // about 2x per step and quadratic about 4x.
+        List<double> ratios = [];
 
-        ratio.Should().BeLessThan(10d,
-            $"4x the elements took {ratio:F1}x the time "
-            + $"({smallTime.TotalMilliseconds:F0}ms -> {largeTime.TotalMilliseconds:F0}ms), "
-            + "which suggests an inverse lookup is scanning the model rather than using its index");
+        for (int i = 1; i < timings.Count; i++)
+        {
+            ratios.Add(timings[i].TotalMilliseconds / Math.Max(timings[i - 1].TotalMilliseconds, 1d));
+        }
+
+        _output.WriteLine("scaling (each step doubles the elements; linear ~2x, quadratic ~4x):");
+
+        for (int i = 0; i < ScalingSizes.Length; i++)
+        {
+            string step = i == 0
+                ? string.Empty
+                : $"  -> {ratios[i - 1]:F2}x";
+
+            _output.WriteLine($"  {ScalingSizes[i],7:N0} elements  {timings[i].TotalMilliseconds,8:F0}ms{step}");
+        }
+
+        // Assert on the last step: the largest models, where a fixed overhead of a few milliseconds
+        // is proportionally smallest and the measurement is therefore most trustworthy.
+        double finalRatio = ratios[^1];
+
+        finalRatio.Should().BeLessThan(3d,
+            $"doubling the elements took {finalRatio:F2}x the time "
+            + $"({timings[^2].TotalMilliseconds:F0}ms -> {timings[^1].TotalMilliseconds:F0}ms), "
+            + "which is closer to quadratic than linear and suggests an inverse lookup is scanning "
+            + "the model rather than using its index");
     }
 
     [Fact]

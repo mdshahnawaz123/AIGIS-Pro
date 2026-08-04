@@ -1,6 +1,30 @@
 <Project>
 
   <!--
+    Ship the manifest beside the assembly. PluginDiscovery decides everything from plugin.json -
+    identity, SDK version, isolation mode, capabilities - and never loads an assembly to find out,
+    so a plugin folder without a manifest is not a broken plugin, it is not a plugin at all.
+
+    This rule has to live in .targets, not .props. Directory.Build.props is imported before the SDK
+    creates its default None item glob, so an Update there matches nothing and fails silently: the
+    build stays green, the assembly stages correctly, and the plugin is simply never discovered at
+    runtime. .targets is imported after the default items exist, which is what makes the Update bind.
+  -->
+  <ItemGroup>
+    <None Update="plugin.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!--
+    Guard one: the manifest exists in the project. Catches a new plugin project added without one.
+  -->
+  <Target Name="VerifyPluginManifest" BeforeTargets="Build" Condition="'$(IsPluginProject)' == 'true'">
+    <Error Condition="!Exists('$(MSBuildProjectDirectory)\plugin.json')"
+           Text="$(AssemblyName) is a plugin project but has no plugin.json. PluginDiscovery identifies a plugin from its manifest and never loads an assembly to find out, so without one this project would compile and stage but never load. Add plugin.json beside the .csproj." />
+  </Target>
+
+  <!--
     Stages each plugin into artifacts/plugins/<AssemblyName>/ so the host's default search path
     ("Plugins", resolved next to the executable) finds a folder-per-plugin layout identical to the
     one a third-party installer would produce. First-party plugins are deliberately deployed the
@@ -21,6 +45,25 @@
           SkipUnchangedFiles="true" />
 
     <Message Importance="normal" Text="Staged plugin $(AssemblyName) to $(PluginStagingDirectory)" />
+  </Target>
+
+  <!--
+    Guard two: the manifest actually arrived. This is the one that matters.
+
+    The defect this exists for was not a missing file - every plugin.json was present in source the
+    whole time. The copy rule sat in Directory.Build.props, matched nothing, and failed without a
+    word. Thirteen plugins compiled, staged and were undiscoverable, and no existing check noticed,
+    because a source-side existence test passes in exactly that situation.
+
+    So the assertion is made against the build output rather than the source tree: whatever
+    mechanism copies the manifest, the result is verified where the host will actually look for it.
+  -->
+  <Target Name="VerifyPluginManifestDeployed" AfterTargets="StagePlugin" Condition="'$(IsPluginProject)' == 'true'">
+    <Error Condition="!Exists('$(TargetDir)plugin.json')"
+           Text="$(AssemblyName) built without plugin.json in $(TargetDir). The manifest exists in the project but was not copied to the output, so the plugin would never be discovered at runtime. Check that the None Update rule for plugin.json is evaluated after SDK item evaluation - it belongs in plugins/Directory.Build.targets, never in Directory.Build.props." />
+
+    <Error Condition="!Exists('$(PluginStagingDirectory)plugin.json')"
+           Text="$(AssemblyName) staged to $(PluginStagingDirectory) without plugin.json. The host scans that folder and identifies plugins by manifest, so this plugin would be invisible at runtime." />
   </Target>
 
 </Project>

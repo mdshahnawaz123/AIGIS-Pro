@@ -10,10 +10,11 @@
     <PluginStagingRoot>$(MSBuildThisFileDirectory)..\artifacts\plugins\</PluginStagingRoot>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Update="plugin.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+  <!--
+    The plugin.json copy rule is deliberately NOT here. Directory.Build.props is imported before
+    the SDK defines its default None glob, so an Update against those items is a silent no-op and
+    the manifest never reaches bin. It lives in Directory.Build.targets instead, which is imported
+    after the default items exist.
+  -->
 
 </Project>

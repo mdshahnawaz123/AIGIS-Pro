@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Revit add-in manifest for the AI GIS Converter bridge.
+
+  Revit scans %APPDATA%\Autodesk\Revit\Addins\2024 and %PROGRAMDATA%\Autodesk\Revit\Addins\2024 for
+  .addin files at start-up. The Assembly path below is relative to this manifest, which is why the
+  build deploys the manifest to the root and the assemblies to the AiGisConverter subfolder: one
+  folder per add-in, rather than every vendor's dependencies in a shared pile.
+
+  The AddInId must stay fixed. Revit uses it to identify the add-in across sessions, and changing it
+  makes an upgraded add-in look like a different one that happens to have the same name.
+-->
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>AI GIS Converter Bridge</Name>
+    <Assembly>AiGisConverter\AiGisConverter.Addin.Revit.dll</Assembly>
+    <AddInId>09F9457D-4B97-4A43-B8B5-9A42EEF17A6B</AddInId>
+    <FullClassName>AiGisConverter.Addin.Revit.RevitBridgeApplication</FullClassName>
+    <VendorId>AIGIS</VendorId>
+    <VendorDescription>AI GIS Converter</VendorDescription>
+  </AddIn>
+</RevitAddIns>

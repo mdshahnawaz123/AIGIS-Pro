@@ -1,8 +1,24 @@
+using System.Text.Json.Serialization;
+
 namespace AiGisConverter.Plugins.Abstractions;
 
 /// <summary>
 /// How a plugin's assemblies are loaded.
 /// </summary>
+/// <remarks>
+/// <para>
+/// The converter is part of the contract, not a serialisation detail. Every <c>plugin.json</c>
+/// writes this as a name - <c>"isolation": "Isolated"</c> - because a manifest is meant to be
+/// written and read by people, and an integer would make it neither.
+/// </para>
+/// <para>
+/// Declared on the type so it holds for every reader and writer of a manifest. Without it,
+/// <c>JsonSerializerDefaults.Web</c> deserialises enums from numbers only and throws on a name.
+/// That failure is caught and logged as a skipped manifest, which meant no plugin was ever
+/// discoverable and nothing said so - the whole plugin system was silently inert.
+/// </para>
+/// </remarks>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum PluginIsolationMode
 {
     /// <summary>

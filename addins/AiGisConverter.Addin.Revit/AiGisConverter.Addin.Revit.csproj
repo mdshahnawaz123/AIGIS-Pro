@@ -1,0 +1,93 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The AI GIS Converter add-in for Revit 2024.
+
+    This assembly runs inside Revit's process and serves the bridge pipe. It is the server half of
+    the contract whose client half is AiGisConverter.Plugins.Revit; the two share only
+    Bridge.Protocol, which is netstandard2.0 so it can be referenced from both runtimes.
+  -->
+  <PropertyGroup>
+    <RootNamespace>AiGisConverter.Addin.Revit</RootNamespace>
+    <AssemblyName>AiGisConverter.Addin.Revit</AssemblyName>
+    <RevitVersion>2024</RevitVersion>
+  </PropertyGroup>
+
+  <!--
+    Resolved from the local Revit installation rather than a package. Set RevitApiDirectory to
+    override, for a non-default install location:
+      dotnet build -p:RevitApiDirectory="D:\Autodesk\Revit 2024\"
+  -->
+  <PropertyGroup>
+    <RevitApiDirectory Condition="'$(RevitApiDirectory)' == ''">$(ProgramW6432)\Autodesk\Revit $(RevitVersion)\</RevitApiDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Private=false is not an optimisation, it is required. Copying Revit's own assemblies beside
+      the add-in gives the process a second identity for every API type, and the cast failures that
+      follow name a type as unconvertible to itself.
+    -->
+    <Reference Include="RevitAPI">
+      <HintPath>$(RevitApiDirectory)RevitAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="RevitAPIUI">
+      <HintPath>$(RevitApiDirectory)RevitAPIUI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The only assembly shared with the converter. Copied locally: Revit probes the add-in folder. -->
+    <ProjectReference Include="..\..\src\AiGisConverter.Bridge.Protocol\AiGisConverter.Bridge.Protocol.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="AiGisConverter.Revit.addin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!--
+    A missing Revit installation otherwise surfaces as a wall of CS0246 errors about Autodesk types,
+    which reads like a code fault rather than a machine that simply does not have Revit on it.
+  -->
+  <Target Name="VerifyRevitApi" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(RevitApiDirectory)RevitAPI.dll')"
+           Text="RevitAPI.dll was not found at '$(RevitApiDirectory)'. This project references the Revit $(RevitVersion) API from the local installation, so it only builds on a machine with Revit $(RevitVersion) installed. Override the location with -p:RevitApiDirectory=&quot;&lt;path&gt;\&quot; if Revit is installed elsewhere." />
+  </Target>
+
+  <!--
+    Deploy to the per-user add-in folder, which needs no elevation, unlike the ProgramData one.
+    Turn off with -p:DeployRevitAddin=false when building on a machine that should not be touched.
+  -->
+  <PropertyGroup>
+    <DeployRevitAddin Condition="'$(DeployRevitAddin)' == ''">true</DeployRevitAddin>
+    <RevitAddinDeployRoot>$(AppData)\Autodesk\Revit\Addins\$(RevitVersion)\</RevitAddinDeployRoot>
+  </PropertyGroup>
+
+  <Target Name="DeployAddin" AfterTargets="Build" Condition="'$(DeployRevitAddin)' == 'true'">
+    <ItemGroup>
+      <!--
+        The manifest goes in the add-in root where Revit scans for it; the assemblies go in a
+        subfolder, which is what the FullClassName/Assembly pair in the .addin file points at. This
+        keeps one folder per add-in rather than a shared bag of everyone's dependencies.
+      -->
+      <AddinPayload Include="$(TargetDir)**\*.*" Exclude="$(TargetDir)**\*.pdb;$(TargetDir)AiGisConverter.Revit.addin" />
+    </ItemGroup>
+
+    <Copy SourceFiles="$(TargetDir)AiGisConverter.Revit.addin"
+          DestinationFolder="$(RevitAddinDeployRoot)"
+          SkipUnchangedFiles="true"
+          ContinueOnError="true" />
+
+    <Copy SourceFiles="@(AddinPayload)"
+          DestinationFiles="@(AddinPayload->'$(RevitAddinDeployRoot)AiGisConverter\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          ContinueOnError="true" />
+
+    <Message Importance="high" Text="Deployed the Revit add-in to $(RevitAddinDeployRoot)" />
+  </Target>
+
+</Project>

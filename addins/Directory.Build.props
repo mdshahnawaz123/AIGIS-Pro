@@ -1,0 +1,36 @@
+<Project>
+
+  <!-- Inherit solution-wide settings, then apply add-in defaults. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <!--
+      Revit 2024 hosts add-ins on .NET Framework 4.8. This is not a choice: an add-in assembly is
+      loaded into Revit's own process, so it must target the runtime that process is already using.
+      Bridge.Protocol targets netstandard2.0 for exactly this reason and is the only assembly that
+      crosses the boundary.
+    -->
+    <TargetFramework>net48</TargetFramework>
+    <IsAddinProject>true</IsAddinProject>
+
+    <!--
+      Implicit usings pull in System.Net.Http, which is not referenced by default on net48 and would
+      fail to resolve. The add-in is small enough that explicit usings cost nothing.
+    -->
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <!--
+      The .NET Framework BCL carries no nullable annotations, so 'enable' would report the framework
+      itself as unannotated rather than finding anything real. Annotations-only matches the choice
+      already made in Bridge.Protocol.
+    -->
+    <Nullable>annotations</Nullable>
+
+    <!-- Revit is 64-bit only; an add-in built for x86 will not load. -->
+    <PlatformTarget>x64</PlatformTarget>
+
+    <!-- Add-ins are deployed by copying, never packaged. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+</Project>
