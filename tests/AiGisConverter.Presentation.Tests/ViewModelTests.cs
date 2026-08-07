@@ -94,7 +94,29 @@ public sealed class ViewModelTests
     private static ProjectViewModel Project(
         IReadOnlyList<string>? drawings = null,
         string? folder = null) =>
-        new(Catalog(".dxf", ".dwg"), Dialogs(drawings, folder), CrsCatalog(), CrsSuggester(), CrsPreferences(), CrsValidator(), Transformer());
+        new(Catalog(".dxf", ".dwg"), Dialogs(drawings, folder), CrsCatalog(), CrsSuggester(), CrsPreferences(), CrsValidator(), Transformer(), PluginHost(), Capabilities());
+
+    /// <summary>A host with no plugins loaded, so no live session is offered.</summary>
+    /// <remarks>
+    /// These tests are about the drawing list and the coordinate-system selectors. A plugin host
+    /// with nothing in it keeps the live-session path out of their way without pretending it is
+    /// absent from the view model.
+    /// </remarks>
+    private static IPluginHost PluginHost()
+    {
+        IPluginHost host = Substitute.For<IPluginHost>();
+        host.Plugins.Returns([]);
+
+        return host;
+    }
+
+    private static ICapabilityRegistry Capabilities()
+    {
+        ICapabilityRegistry registry = Substitute.For<ICapabilityRegistry>();
+        registry.GetCapabilitiesWithSource<IDataSourceReader>().Returns([]);
+
+        return registry;
+    }
 
     private static ICoordinateTransformer Transformer()
     {

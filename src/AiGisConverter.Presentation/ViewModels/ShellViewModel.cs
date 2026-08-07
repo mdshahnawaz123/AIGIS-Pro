@@ -106,6 +106,10 @@ public sealed partial class ShellViewModel : ObservableObject
         IsDatabaseAvailable = outcome.DatabaseReady;
         Plugins.Load(outcome.Plugins);
 
+        // Only now can the Project page know which live sessions to offer: a bridge plugin has to
+        // have loaded before its host application can be presented as an input.
+        Project.RefreshLiveSessions();
+
         foreach (string warning in outcome.Warnings)
         {
             StartupWarnings.Add(warning);

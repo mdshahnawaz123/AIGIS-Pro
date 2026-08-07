@@ -5,7 +5,9 @@ using AiGisConverter.Domain.Entities.Source;
 using AiGisConverter.Domain.Enums;
 using AiGisConverter.Domain.Common;
 using AiGisConverter.Domain.ValueObjects;
+using AiGisConverter.Bridge.Protocol;
 using AiGisConverter.Gis.Abstractions;
+using AiGisConverter.Plugins.Hosting;
 using AiGisConverter.Presentation.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -21,6 +23,8 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     private readonly ICrsPreferences _preferences;
     private readonly ICrsValidator _validator;
     private readonly ICoordinateTransformer _transformer;
+    private readonly IPluginHost _plugins;
+    private readonly ICapabilityRegistry _capabilities;
 
     [ObservableProperty]
     private bool _isPassThrough;
@@ -59,6 +63,8 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     /// <param name="preferences">Remembers recent and favourite coordinate systems.</param>
     /// <param name="validator">Runs the pre-conversion coordinate-system checks.</param>
     /// <param name="transformer">Used only to ask whether a reprojection can be performed.</param>
+    /// <param name="plugins">Supplies the loaded plugins, used to offer live host sessions.</param>
+    /// <param name="capabilities">Links each reader back to the plugin that contributed it.</param>
     public ProjectViewModel(
         IDataSourceReaderCatalog readers,
         IDialogService dialogs,
@@ -66,7 +72,9 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
         ICrsSuggester suggester,
         ICrsPreferences preferences,
         ICrsValidator validator,
-        ICoordinateTransformer transformer)
+        ICoordinateTransformer transformer,
+        IPluginHost plugins,
+        ICapabilityRegistry capabilities)
     {
         ArgumentNullException.ThrowIfNull(readers);
         ArgumentNullException.ThrowIfNull(dialogs);
@@ -75,8 +83,12 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(preferences);
         ArgumentNullException.ThrowIfNull(validator);
         ArgumentNullException.ThrowIfNull(transformer);
+        ArgumentNullException.ThrowIfNull(plugins);
+        ArgumentNullException.ThrowIfNull(capabilities);
 
         _transformer = transformer;
+        _plugins = plugins;
+        _capabilities = capabilities;
         _readers = readers;
         _dialogs = dialogs;
         _suggester = suggester;
@@ -105,6 +117,22 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     /// <summary>Gets the drawings queued for conversion.</summary>
     public ObservableCollection<string> Drawings { get; } = [];
 
+    /// <summary>
+    /// The entries in <see cref="Drawings"/> that are live host sessions rather than files.
+    /// </summary>
+    /// <remarks>
+    /// Held alongside rather than as a richer item type so that everything already bound to
+    /// <see cref="Drawings"/> - the list, the remove command, the convert guard - keeps working
+    /// unchanged. The distinction only matters at the moment a job is built.
+    /// </remarks>
+    private readonly HashSet<string> _liveSessions = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Gets the live host sessions that can be converted, one per loaded bridge plugin.</summary>
+    public ObservableCollection<LiveSessionOption> LiveSessions { get; } = [];
+
+    /// <summary>Gets a value indicating whether any live session can be offered.</summary>
+    public bool HasLiveSessions => LiveSessions.Count > 0;
+
     /// <summary>Gets the export formats a project may target.</summary>
     public IReadOnlyList<ExportFormat> AvailableFormats { get; } =
     [
@@ -126,6 +154,74 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
         Drawings.Count > 0
         && !string.IsNullOrWhiteSpace(OutputFolder)
         && !HasValidationErrors;
+
+    /// <summary>
+    /// Rebuilds the list of live sessions on offer from the plugins that actually loaded.
+    /// </summary>
+    /// <remarks>
+    /// A plugin declaring a host application in its manifest is, by definition, a bridge client for
+    /// a running application rather than a file reader. That is the whole test: no separate registry
+    /// of "live-capable" formats to keep in step, and a new bridge plugin appears here by shipping
+    /// its manifest.
+    /// </remarks>
+    public void RefreshLiveSessions()
+    {
+        LiveSessions.Clear();
+
+        // The reader is matched to its plugin by identifier, not by name. The registry already
+        // records which plugin contributed each capability, and guessing from a display name would
+        // be a rule that works until someone renames a reader.
+        IReadOnlyList<(string PluginId, IDataSourceReader Capability)> contributed =
+            _capabilities.GetCapabilitiesWithSource<IDataSourceReader>();
+
+        foreach (PluginDescriptor descriptor in _plugins.Plugins
+            .Where(static d => d.State == PluginLoadState.Loaded && d.Manifest.HostApplication is not null)
+            .OrderBy(static d => d.Manifest.HostApplication!.Name, StringComparer.Ordinal))
+        {
+            IDataSourceReader? reader = contributed
+                .Where(pair => string.Equals(pair.PluginId, descriptor.Id, StringComparison.OrdinalIgnoreCase))
+                .Select(static pair => pair.Capability)
+                .FirstOrDefault(static candidate => candidate.SupportedExtensions.Count > 0);
+
+            if (reader is null)
+            {
+                continue;
+            }
+
+            LiveSessions.Add(new LiveSessionOption(
+                descriptor.Manifest.HostApplication!.Name,
+                reader.SupportedExtensions[0],
+                reader.DisplayName));
+        }
+
+        OnPropertyChanged(nameof(HasLiveSessions));
+    }
+
+    /// <summary>Adds the host's currently open document as a conversion input.</summary>
+    /// <remarks>
+    /// No file is chosen because none is meant. The label carries the reader's own extension so the
+    /// reader catalogue routes it exactly as it routes a file, and the hint tells the add-in on the
+    /// far side of the bridge to read whatever is open rather than to look for that name on disk.
+    /// </remarks>
+    /// <param name="option">The host session to add.</param>
+    [RelayCommand]
+    private void AddLiveSession(LiveSessionOption? option)
+    {
+        if (option is null)
+        {
+            return;
+        }
+
+        string label = option.Label;
+
+        if (!Drawings.Contains(label, StringComparer.OrdinalIgnoreCase))
+        {
+            Drawings.Add(label);
+            _liveSessions.Add(label);
+        }
+
+        OnPropertyChanged(nameof(CanConvert));
+    }
 
     /// <summary>Adds drawings.</summary>
     [RelayCommand]
@@ -305,6 +401,7 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
         if (path is not null)
         {
             Drawings.Remove(path);
+            _liveSessions.Remove(path);
             OnPropertyChanged(nameof(CanConvert));
         }
     }
@@ -374,7 +471,17 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
 
         foreach (string drawing in Drawings)
         {
-            project.AddJob(new SourceReference(drawing));
+            bool live = _liveSessions.Contains(drawing);
+            SourceReference reference = new(drawing) { IsLiveSession = live };
+
+            if (live)
+            {
+                // Travels to the add-in as a bridge request argument, which is what makes it
+                // disregard the label and read the open document.
+                reference.SetHint(BridgeProtocol.LiveSessionArgument, "true");
+            }
+
+            project.AddJob(reference);
         }
 
         return project;

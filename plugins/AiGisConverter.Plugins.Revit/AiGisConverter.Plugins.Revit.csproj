@@ -24,9 +24,15 @@
     <ProjectReference Include="..\..\src\AiGisConverter.Plugins.Abstractions\AiGisConverter.Plugins.Abstractions.csproj">
       <Private>false</Private>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\AiGisConverter.Bridge.Client\AiGisConverter.Bridge.Client.csproj">
-      <Private>false</Private>
-    </ProjectReference>
+    <!--
+      Bridge.Client is NOT a contract assembly and is deliberately copied here, unlike the two
+      above. Nothing of its own crosses the plugin boundary: the reader it provides is handed to
+      the host as IDataSourceReader, which lives in Abstractions. Because it is absent from
+      PluginOptions.SharedAssemblies, the load context resolves it from this plugin's own
+      dependencies - so it has to be in this folder. Marked Private=false it was in neither the
+      plugin folder nor beside the host, and the plugin could not load at all.
+    -->
+    <ProjectReference Include="..\..\src\AiGisConverter.Bridge.Client\AiGisConverter.Bridge.Client.csproj" />
     <ProjectReference Include="..\..\src\AiGisConverter.Bridge.Protocol\AiGisConverter.Bridge.Protocol.csproj">
       <Private>false</Private>
     </ProjectReference>

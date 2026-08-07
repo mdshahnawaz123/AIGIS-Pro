@@ -63,6 +63,24 @@ public sealed class AiProvidersPlugin : PluginBase
                 continue;
             }
 
+            // The shipped appsettings.json documents an Azure endpoint with '<resource>' and
+            // '<deployment>' left as placeholders for the operator to fill in. Those are not a
+            // valid host name, so constructing the provider threw - and the throw escaped far
+            // enough to abort loading every other plugin. An endpoint nobody has configured yet is
+            // a normal state, not a fault, and it belongs skipped with a note rather than fatal.
+            if (!Uri.TryCreate(endpoint.BaseAddress, UriKind.Absolute, out Uri? baseAddress)
+                || (baseAddress.Scheme != Uri.UriSchemeHttp && baseAddress.Scheme != Uri.UriSchemeHttps))
+            {
+                context.Logger.LogWarning(
+                    "Skipped AI endpoint '{ProviderKey}': '{BaseAddress}' is not an absolute http or https "
+                    + "address. Replace the placeholders in Plugins:{PluginId}:endpoints to enable it.",
+                    endpoint.Key,
+                    endpoint.BaseAddress,
+                    Id);
+
+                continue;
+            }
+
             OpenAiCompatibleProvider provider = new(
                 endpoint,
                 promptBuilder,

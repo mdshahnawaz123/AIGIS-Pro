@@ -188,14 +188,17 @@ public sealed class PluginHost : IPluginHost, IAsyncDisposable
                 descriptor.Manifest.Version,
                 descriptor.LoadDuration.TotalMilliseconds);
         }
-        catch (Exception ex) when (ex is PluginException
-                                      or BadImageFormatException
-                                      or FileLoadException
-                                      or FileNotFoundException
-                                      or TypeLoadException
-                                      or MissingMethodException
-                                      or TargetInvocationException
-                                      or OperationCanceledException)
+        // Any exception, not a list of the ones anticipated.
+        //
+        // This was an allow-list, and a plugin whose ConfigureAsync threw anything outside it took
+        // the whole load down with it: the exception escaped to LoadAllAsync, every descriptor
+        // already discovered was discarded, and the application reported no plugins at all. A
+        // single malformed URL in configuration was enough to do it.
+        //
+        // That directly contradicted FailFastOnLoadError, which defaults to false precisely so one
+        // broken plugin cannot stop the application opening. Honouring that option means catching
+        // whatever a third-party plugin actually throws, not whatever was foreseen here.
+        catch (Exception ex)
         {
             descriptor.State = PluginLoadState.Failed;
             descriptor.FailureReason = ex.Message;

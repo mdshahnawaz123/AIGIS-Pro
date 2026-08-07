@@ -203,6 +203,22 @@ namespace AiGisConverter.Addin.Revit
             return RemoveConsecutiveDuplicates(reduced);
         }
 
+        /// <summary>Decides whether a ring encloses too little plan area to be a polygon.</summary>
+        /// <remarks>
+        /// The same test <see cref="ToPolygonWkt"/> applies, exposed so a caller can ask before
+        /// committing to a ring rather than discovering it after every alternative has been thrown
+        /// away. The two must not drift, so <see cref="ToPolygonWkt"/> calls this rather than
+        /// repeating it.
+        /// </remarks>
+        /// <param name="ring">The ring to test.</param>
+        /// <returns><see langword="true"/> when the ring cannot become a polygon.</returns>
+        internal static bool IsDegenerate(IList<Point2D> ring)
+        {
+            List<Point2D> cleaned = RemoveConsecutiveDuplicates(ring);
+
+            return cleaned.Count < 3 || Area(cleaned) <= Tolerance;
+        }
+
         /// <summary>
         /// Writes a ring as an OGC polygon in well-known text.
         /// </summary>
@@ -215,12 +231,12 @@ namespace AiGisConverter.Addin.Revit
         /// <returns>The polygon text, or null when the ring is degenerate.</returns>
         internal static string ToPolygonWkt(IList<Point2D> ring)
         {
-            List<Point2D> cleaned = RemoveConsecutiveDuplicates(ring);
-
-            if (cleaned.Count < 3 || Area(cleaned) <= Tolerance)
+            if (IsDegenerate(ring))
             {
                 return null;
             }
+
+            List<Point2D> cleaned = RemoveConsecutiveDuplicates(ring);
 
             if (TwiceSignedArea(cleaned) < 0d)
             {
@@ -253,6 +269,97 @@ namespace AiGisConverter.Addin.Revit
             text.Append(')');
 
             return text.ToString();
+        }
+
+        /// <summary>
+        /// Orders points along the axis they vary most along.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Mesh vertices and hull points arrive in whatever order the tessellator produced them,
+        /// which is fine for a hull - the algorithm sorts anyway - and useless for a line. Joining
+        /// a near-collinear set in tessellation order gives a linestring that doubles back on
+        /// itself, lands on the right ground, and reports a length several times the truth. A
+        /// wrong length is worse than no geometry, because nothing downstream can tell.
+        /// </para>
+        /// <para>
+        /// The axis is the principal component of the set. For two dimensions that closes in one
+        /// <c>atan2</c> with no iteration and no matrix: the covariance eigenvector lies at half
+        /// the angle of <c>(2*Sxy, Sxx - Syy)</c>. Slight curvature survives, because the points
+        /// keep their positions and only their order changes.
+        /// </para>
+        /// </remarks>
+        /// <param name="points">The points to order.</param>
+        /// <returns>The points, ordered along their dominant axis.</returns>
+        internal static List<Point2D> OrderAlongDominantAxis(IList<Point2D> points)
+        {
+            List<Point2D> ordered = new List<Point2D>();
+
+            if (points == null)
+            {
+                return ordered;
+            }
+
+            ordered.AddRange(points);
+
+            if (ordered.Count < 3)
+            {
+                // One order is as good as the other, and reversing a two-point line changes nothing
+                // a consumer can observe.
+                return ordered;
+            }
+
+            double centreX = 0d;
+            double centreY = 0d;
+
+            foreach (Point2D point in ordered)
+            {
+                centreX += point.X;
+                centreY += point.Y;
+            }
+
+            centreX /= ordered.Count;
+            centreY /= ordered.Count;
+
+            double sxx = 0d;
+            double syy = 0d;
+            double sxy = 0d;
+
+            foreach (Point2D point in ordered)
+            {
+                double dx = point.X - centreX;
+                double dy = point.Y - centreY;
+
+                sxx += dx * dx;
+                syy += dy * dy;
+                sxy += dx * dy;
+            }
+
+            double angle = 0.5d * Math.Atan2(2d * sxy, sxx - syy);
+            double axisX = Math.Cos(angle);
+            double axisY = Math.Sin(angle);
+
+            ordered.Sort((a, b) =>
+            {
+                double alongA = ((a.X - centreX) * axisX) + ((a.Y - centreY) * axisY);
+                double alongB = ((b.X - centreX) * axisX) + ((b.Y - centreY) * axisY);
+                int comparison = alongA.CompareTo(alongB);
+
+                if (comparison != 0)
+                {
+                    return comparison;
+                }
+
+                // Ties resolved on the perpendicular, so the order is total and the output is the
+                // same on every run. List.Sort is not stable, so leaving ties unresolved would let
+                // identical input produce different well-known text.
+                double acrossA = ((a.X - centreX) * -axisY) + ((a.Y - centreY) * axisX);
+                double acrossB = ((b.X - centreX) * -axisY) + ((b.Y - centreY) * axisX);
+
+                return acrossA.CompareTo(acrossB);
+            });
+
+            return ordered;
         }
 
         /// <summary>Writes a run of points as a well-known text line string.</summary>

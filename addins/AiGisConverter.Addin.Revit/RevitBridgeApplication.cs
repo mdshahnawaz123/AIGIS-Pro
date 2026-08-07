@@ -324,9 +324,26 @@ namespace AiGisConverter.Addin.Revit
             }
         }
 
-        private static Document ResolveDocument(UIApplication application, string location, out string error)
+        private static Document ResolveDocument(
+            UIApplication application,
+            BridgeRequest request,
+            out string error)
         {
             error = null;
+
+            string location = request.Location;
+
+            // A live-session request names no file. The converter sends a label so the reader can be
+            // chosen by format, and this argument says to ignore it: what the operator asked for is
+            // whatever is open right now, including edits never written to disk.
+            string live;
+
+            if (request.Arguments != null
+                && request.Arguments.TryGetValue(BridgeProtocol.LiveSessionArgument, out live)
+                && string.Equals(live, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                location = null;
+            }
 
             // An explicit location must match a document already open. This slice reads what Revit
             // has in memory; opening a file from disk is a separate act with its own failure modes
@@ -366,7 +383,7 @@ namespace AiGisConverter.Addin.Revit
         private static BridgeResponse CanRead(UIApplication application, BridgeRequest request)
         {
             string error;
-            Document document = ResolveDocument(application, request.Location, out error);
+            Document document = ResolveDocument(application, request, out error);
 
             return new BridgeResponse
             {
@@ -397,7 +414,7 @@ namespace AiGisConverter.Addin.Revit
         private static BridgeResponse ReadDocument(UIApplication application, BridgeRequest request)
         {
             string error;
-            Document document = ResolveDocument(application, request.Location, out error);
+            Document document = ResolveDocument(application, request, out error);
 
             if (document == null)
             {

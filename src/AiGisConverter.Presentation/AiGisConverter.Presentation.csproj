@@ -73,6 +73,18 @@
   </ItemGroup>
 
   <!--
+    Bridge.Protocol appears in PluginOptions.SharedAssemblies, which means the plugin load context
+    deliberately refuses to resolve it from a plugin folder and defers to the host instead - so that
+    the wire types have exactly one identity no matter how many bridge plugins are loaded. That only
+    works if the host actually carries the assembly, and nothing referenced it, so it was beside
+    neither the executable nor any plugin. Declaring it shared and never shipping it is the
+    contradiction this reference resolves.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\AiGisConverter.Bridge.Protocol\AiGisConverter.Bridge.Protocol.csproj" />
+  </ItemGroup>
+
+  <!--
     Build-order only. ReferenceOutputAssembly is false, so no plugin assembly is referenced and no
     plugin type is visible to this project at compile time - the isolation the plugin system exists
     to provide is untouched. What this buys is ordering: the plugins stage into artifacts/plugins

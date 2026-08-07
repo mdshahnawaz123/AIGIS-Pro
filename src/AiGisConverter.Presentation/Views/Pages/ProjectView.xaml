@@ -173,6 +173,32 @@
                     <DockPanel Margin="0,0,0,8">
                         <Button DockPanel.Dock="Right" Content="Add drawings..."
                                 Command="{Binding AddDrawingsCommand}" />
+
+                        <!--
+                            One button per loaded bridge plugin. Hidden entirely when none is
+                            loaded, so an operator without Revit or AutoCAD is not offered a
+                            control that could only ever fail.
+                        -->
+                        <ItemsControl DockPanel.Dock="Right" ItemsSource="{Binding LiveSessions}"
+                                      Visibility="{Binding HasLiveSessions,
+                                                   Converter={StaticResource BoolToVisibility}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Margin="0,0,8,0"
+                                            Content="{Binding Caption}"
+                                            ToolTip="{Binding ReaderName}"
+                                            Command="{Binding DataContext.AddLiveSessionCommand,
+                                                      RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
                         <TextBlock Text="Drawings" FontWeight="SemiBold" />
                     </DockPanel>
 

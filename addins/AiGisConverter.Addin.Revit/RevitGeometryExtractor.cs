@@ -89,16 +89,18 @@ namespace AiGisConverter.Addin.Revit
         /// Extracts the plan footprint of an element as well-known text.
         /// </summary>
         /// <param name="element">The element to read.</param>
-        /// <param name="kind">Receives the geometry kind the caller should record.</param>
-        /// <param name="warning">Receives a non-fatal problem, or null.</param>
-        /// <returns>The geometry as well-known text, or null when the element has none.</returns>
-        internal string Extract(Element element, out string kind, out string warning)
+        /// <param name="outcome">
+        /// Receives the geometry kind on success, or the stage, reason and measurements behind a
+        /// failure. Always populated, so a null return is never unexplained.
+        /// </param>
+        /// <returns>The geometry as well-known text, or null when no footprint could be built.</returns>
+        internal string Extract(Element element, out GeometryOutcome outcome)
         {
-            kind = "Unknown";
-            warning = null;
+            outcome = new GeometryOutcome { Kind = "Unknown" };
 
             if (element == null)
             {
+                outcome.Fail(GeometryStage.Extractor, GeometryReason.NoGeometryElement, "element was null");
                 return null;
             }
 
@@ -110,14 +112,13 @@ namespace AiGisConverter.Addin.Revit
             }
             catch (Exception exception)
             {
-                warning = "Geometry could not be opened: " + exception.Message;
+                outcome.Fail(GeometryStage.Extractor, GeometryReason.OpenFailed, exception.GetType().Name + ": " + exception.Message);
                 return null;
             }
 
             if (geometry == null)
             {
-                // Not a failure. Many valid elements - a level, a grid, a room separator - simply
-                // carry no solid, and reporting that as a problem would bury the real ones.
+                outcome.Fail(GeometryStage.Extractor, GeometryReason.NoGeometryElement, "get_Geometry returned null");
                 return null;
             }
 
@@ -125,36 +126,94 @@ namespace AiGisConverter.Addin.Revit
             List<Footprint.Point2D> best = null;
             double bestArea = 0d;
 
+            // What the traversal actually met. Without this, "no vertices" is a dead end; with it,
+            // the difference between an empty solid, a curve-only shape and an unopened instance is
+            // one column in the report.
+            GeometrySurvey survey = new GeometrySurvey();
+
             try
             {
-                Collect(geometry, Transform.Identity, vertices, ref best, ref bestArea, element);
+                Collect(geometry, Transform.Identity, vertices, ref best, ref bestArea, element, survey);
             }
             catch (Exception exception)
             {
-                warning = "Geometry traversal stopped early: " + exception.Message;
+                outcome.Warning = "Geometry traversal stopped early: " + exception.Message;
+            }
+
+            // Decided before the ring logic, because by then the distinction is gone. An element
+            // that met no surface is a centreline - a pipe, a duct, a model line - and its convex
+            // hull would be a polygon enclosing the run rather than the run itself. A straight run
+            // survives the hull anyway, being collinear; a bent one does not, and would have become
+            // a triangle over the bend.
+            if (!survey.SawSurface && vertices.Count >= 2)
+            {
+                string centreline = Footprint.ToLineWkt(vertices);
+
+                if (centreline != null)
+                {
+                    outcome.Kind = "Line";
+                    return centreline;
+                }
             }
 
             List<Footprint.Point2D> ring = best;
+            bool usedHull = false;
 
-            if (ring == null || ring.Count < 3)
+            if (ring == null || Footprint.IsDegenerate(ring))
             {
-                // No horizontal face anywhere in the element. The hull of everything tessellated is
-                // an over-approximation, which is the right direction to be wrong in for a footprint.
+                // Either no horizontal face anywhere in the element, or one that encloses nothing
+                // measurable. The second case used to fall straight through to failure, discarding
+                // a vertex set already in hand: any horizontal face beats a starting area of zero,
+                // so a chamfer or a sliver could win the ring and lose the element. The hull of
+                // everything tessellated is an over-approximation, which is the right direction to
+                // be wrong in for a footprint.
                 ring = Footprint.ConvexHull(vertices);
+                usedHull = true;
             }
 
-            if (ring == null || ring.Count < 3)
+            // Degeneracy, not point count. A near-vertical plate projects to a sliver whose hull
+            // keeps three or more points - the monotone chain compares cross products against
+            // exactly zero, and floating-point noise leaves collinear points standing. Those rings
+            // passed this guard, failed the polygon test below, and lost the element, when a
+            // linestring was available the whole time. That accounted for every geometry failure
+            // in the last export: 393 of 393.
+            if (ring == null || Footprint.IsDegenerate(ring))
             {
                 if (vertices.Count == 1)
                 {
-                    kind = "Point";
+                    outcome.Kind = "Point";
                     return Footprint.ToPointWkt(vertices[0]);
                 }
 
                 if (vertices.Count >= 2)
                 {
-                    kind = "Line";
-                    return Footprint.ToLineWkt(vertices);
+                    // Ordered first. These vertices came from a mesh or a hull, so their sequence
+                    // is the tessellator's, not the geometry's, and joining them as they stand
+                    // would double back along the sliver and overstate its length.
+                    string line = Footprint.ToLineWkt(Footprint.OrderAlongDominantAxis(vertices));
+
+                    if (line != null)
+                    {
+                        outcome.Kind = "Line";
+                        return line;
+                    }
+                }
+
+                // Distinguished so the report stays honest: a ring that was found and could not be
+                // used is a different fact from no geometry at all.
+                if (ring != null && ring.Count >= 3)
+                {
+                    outcome.Fail(
+                        GeometryStage.FootprintBuilder,
+                        GeometryReason.DegenerateRing,
+                        "ring=" + ring.Count + " pts, area="
+                            + Footprint.Area(ring).ToString("R", System.Globalization.CultureInfo.InvariantCulture)
+                            + " m2, source=" + (usedHull ? "hull" : "horizontalFace")
+                            + ", vertices=" + vertices.Count + ", " + survey.Describe());
+                }
+                else
+                {
+                    outcome.Fail(GeometryStage.FootprintBuilder, GeometryReason.NoVertices, survey.Describe());
                 }
 
                 return null;
@@ -167,7 +226,7 @@ namespace AiGisConverter.Addin.Revit
                 ring = Footprint.Simplify(ring, _vertexLimit);
                 SimplifiedRings++;
 
-                warning = "The footprint was simplified from " + before + " to " + ring.Count
+                outcome.Warning = "The footprint was simplified from " + before + " to " + ring.Count
                     + " vertices to keep the response transportable.";
             }
 
@@ -175,10 +234,22 @@ namespace AiGisConverter.Addin.Revit
 
             if (wkt == null)
             {
+                // Reachable only through simplification: the ring was measurably non-degenerate at
+                // the guard above, so a null here means dropping points to meet the vertex limit
+                // collapsed it. Reported with the measurements rather than silently dropped,
+                // because a ring that survived every earlier test and died to a stride is a fact
+                // about the limit, not about the element.
+                outcome.Fail(
+                    GeometryStage.FootprintBuilder,
+                    GeometryReason.DegenerateRing,
+                    "ring=" + ring.Count + " pts, area=" + Footprint.Area(ring).ToString("R", System.Globalization.CultureInfo.InvariantCulture)
+                        + " m2, source=" + (usedHull ? "hull" : "horizontalFace")
+                        + ", vertices=" + vertices.Count + ", " + survey.Describe());
+
                 return null;
             }
 
-            kind = "Polygon";
+            outcome.Kind = "Polygon";
 
             return wkt;
         }
@@ -189,15 +260,18 @@ namespace AiGisConverter.Addin.Revit
             List<Footprint.Point2D> vertices,
             ref List<Footprint.Point2D> best,
             ref double bestArea,
-            Element owner)
+            Element owner,
+            GeometrySurvey survey)
         {
             foreach (GeometryObject item in geometry)
             {
+                survey.Seen(item);
+
                 Solid solid = item as Solid;
 
                 if (solid != null)
                 {
-                    CollectSolid(solid, transform, vertices, ref best, ref bestArea);
+                    CollectSolid(solid, transform, vertices, ref best, ref bestArea, survey);
                     continue;
                 }
 
@@ -205,6 +279,7 @@ namespace AiGisConverter.Addin.Revit
 
                 if (mesh != null)
                 {
+                    survey.SawSurface = true;
                     CollectMesh(mesh, transform, vertices);
                     continue;
                 }
@@ -213,8 +288,80 @@ namespace AiGisConverter.Addin.Revit
 
                 if (instance != null)
                 {
-                    CollectInstance(instance, vertices, ref best, ref bestArea, owner);
+                    CollectInstance(instance, vertices, ref best, ref bestArea, owner, survey);
+                    continue;
                 }
+
+                // Curves are not a lesser form of solid, they are how Revit represents a whole
+                // class of element: pipes, ducts, conduit and cable tray at anything below Fine
+                // detail, model and property lines, and every line-based family. None of them
+                // reached this traversal before, so they arrived with attributes and no geometry -
+                // which for a drainage network is most of the network. They contribute vertices
+                // only, never a ring: a centreline encloses no plan area, and the line fallback
+                // below turns the vertices into the linestring such an element actually is.
+                Curve curve = item as Curve;
+
+                if (curve != null)
+                {
+                    CollectCurve(curve, transform, vertices);
+                    continue;
+                }
+
+                PolyLine polyLine = item as PolyLine;
+
+                if (polyLine != null)
+                {
+                    CollectPolyLine(polyLine, transform, vertices);
+                    continue;
+                }
+
+                Point point = item as Point;
+
+                if (point != null && point.Coord != null)
+                {
+                    vertices.Add(ToPlan(point.Coord, transform));
+                }
+            }
+        }
+
+        private static void CollectCurve(Curve curve, Transform transform, List<Footprint.Point2D> vertices)
+        {
+            IList<XYZ> tessellated;
+
+            try
+            {
+                tessellated = curve.Tessellate();
+            }
+            catch (Exception)
+            {
+                // An unbound curve cannot be tessellated. Nothing to record: the survey already
+                // counted it, so the report shows a curve was met and yielded no points.
+                return;
+            }
+
+            if (tessellated == null)
+            {
+                return;
+            }
+
+            foreach (XYZ point in tessellated)
+            {
+                vertices.Add(ToPlan(point, transform));
+            }
+        }
+
+        private static void CollectPolyLine(PolyLine polyLine, Transform transform, List<Footprint.Point2D> vertices)
+        {
+            IList<XYZ> points = polyLine.GetCoordinates();
+
+            if (points == null)
+            {
+                return;
+            }
+
+            foreach (XYZ point in points)
+            {
+                vertices.Add(ToPlan(point, transform));
             }
         }
 
@@ -239,7 +386,8 @@ namespace AiGisConverter.Addin.Revit
             List<Footprint.Point2D> vertices,
             ref List<Footprint.Point2D> best,
             ref double bestArea,
-            Element owner)
+            Element owner,
+            GeometrySurvey survey)
         {
             Transform transform = instance.Transform;
             bool upright = transform != null
@@ -281,7 +429,7 @@ namespace AiGisConverter.Addin.Revit
                     List<Footprint.Point2D> symbolBest = null;
                     double symbolArea = 0d;
 
-                    Collect(symbol, Transform.Identity, symbolVertices, ref symbolBest, ref symbolArea, null);
+                    Collect(symbol, Transform.Identity, symbolVertices, ref symbolBest, ref symbolArea, null, survey);
 
                     List<Footprint.Point2D> footprint = symbolBest ?? Footprint.ConvexHull(symbolVertices);
 
@@ -311,7 +459,7 @@ namespace AiGisConverter.Addin.Revit
             {
                 // Instance geometry, not symbol geometry: the latter is in family coordinates, and
                 // using it would stack every door and window at the family origin.
-                Collect(placed, Transform.Identity, vertices, ref best, ref bestArea, owner);
+                Collect(placed, Transform.Identity, vertices, ref best, ref bestArea, owner, survey);
             }
         }
 
@@ -320,12 +468,17 @@ namespace AiGisConverter.Addin.Revit
             Transform transform,
             List<Footprint.Point2D> vertices,
             ref List<Footprint.Point2D> best,
-            ref double bestArea)
+            ref double bestArea,
+            GeometrySurvey survey)
         {
             if (solid.Faces == null || solid.Faces.Size == 0)
             {
+                survey.EmptySolids++;
                 return;
             }
+
+            survey.SawSurface = true;
+            survey.SolidFaces += solid.Faces.Size;
 
             foreach (Face face in solid.Faces)
             {

@@ -68,7 +68,9 @@ public sealed class StreamingGeoJsonExporter : IStreamingExporter
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(features);
 
-        StreamingOptions streaming = _options.CurrentValue.Streaming;
+        GisOptions options = _options.CurrentValue;
+        StreamingOptions streaming = options.Streaming;
+        bool omitNulls = options.Export.OmitNullGeoJsonProperties;
         string path = Path.HasExtension(request.OutputPath) ? request.OutputPath : request.OutputPath + FileExtension;
 
         try
@@ -101,7 +103,7 @@ public sealed class StreamingGeoJsonExporter : IStreamingExporter
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                WriteFeature(writer, feature);
+                WriteFeature(writer, feature, omitNulls);
                 written++;
 
                 if (written % streaming.FlushInterval == 0)
@@ -187,7 +189,18 @@ public sealed class StreamingGeoJsonExporter : IStreamingExporter
         writer.WriteEndObject();
     }
 
-    private static void WriteFeature(Utf8JsonWriter writer, GisFeature feature)
+    /// <summary>Writes one feature.</summary>
+    /// <remarks>
+    /// Null properties are dropped rather than written, because the schema is uniform and the data
+    /// is not. A single element carrying an unusual parameter adds that column to every other
+    /// feature in the file, and on a BIM export those columns are the majority of the bytes. A
+    /// consumer cannot tell the difference: RFC 7946 lets features carry different properties, and
+    /// an absent key and a null one both mean the same thing here - no value.
+    /// </remarks>
+    /// <param name="writer">The writer.</param>
+    /// <param name="feature">The feature to write.</param>
+    /// <param name="omitNulls">Whether properties with no value are dropped.</param>
+    private static void WriteFeature(Utf8JsonWriter writer, GisFeature feature, bool omitNulls)
     {
         writer.WriteStartObject();
         writer.WriteString("type", "Feature");
@@ -197,6 +210,11 @@ public sealed class StreamingGeoJsonExporter : IStreamingExporter
 
         foreach (KeyValuePair<string, AttributeValue> attribute in feature.Attributes)
         {
+            if (omitNulls && attribute.Value.IsNull)
+            {
+                continue;
+            }
+
             WriteAttribute(writer, attribute.Key, attribute.Value);
         }
 

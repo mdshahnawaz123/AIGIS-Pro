@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tests for the Revit add-in's plan-space geometry.
+
+    The add-in itself cannot be referenced: it binds to RevitAPI.dll from a local Revit
+    installation, so a project reference would make these tests unrunnable on any machine without
+    Revit and unrunnable in CI. Footprint.cs is compiled in directly instead, which is possible
+    precisely because it was written to hold no Revit type - the arithmetic is the part worth
+    testing and the part that can be tested.
+  -->
+  <PropertyGroup>
+    <!-- Matches the add-in. The linked source is compiled twice, and both must agree. -->
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>AiGisConverter.Addin.Revit.Tests</RootNamespace>
+
+    <!-- Implicit usings pull in System.Net.Http, which net48 does not reference by default. -->
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <!-- The .NET Framework BCL carries no nullable annotations, as in the add-in. -->
+    <Nullable>annotations</Nullable>
+
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Both files were written to hold no Revit type, which is what makes them testable at all. The
+      rest of the add-in cannot be compiled in: it binds to the Revit API and would make these
+      tests unrunnable anywhere Revit is not installed.
+    -->
+    <Compile Include="..\..\addins\AiGisConverter.Addin.Revit\Footprint.cs" Link="Footprint.cs" />
+    <Compile Include="..\..\addins\AiGisConverter.Addin.Revit\BimNaming.cs" Link="BimNaming.cs" />
+  </ItemGroup>
+
+</Project>
